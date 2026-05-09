@@ -8,12 +8,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import func
 from database.database import SessionLocal, engine
-from models import Base, Circuit, Race, Driver, Team, RaceResult, DriverStanding, TeamStanding
-from api_clients.jolpica_f1_client import JolpicaF1Client
-from api_clients.data_transformers import (
-    transform_race, 
-    transform_driver, 
-    transform_team, 
+from app.models.models import Base, Circuit, Race, Driver, Team, RaceResult, DriverStanding, TeamStanding
+from app.external.jolpica import JolpicaF1Client
+from app.external.transformers import (
+    transform_race,
+    transform_driver,
+    transform_team,
     transform_result
 )
 
@@ -276,7 +276,7 @@ def seed_race_results_for_seasons(session, client, seasons):
                     existing_result.grid_position = int(result_data.get('grid', 0))
                     existing_result.finish_position = int(position) if position else None
                     existing_result.position_text = result_data.get('positionText', '')
-                    existing_result.points = float(result_data.get('points', 0))
+                    existing_result.points_scored = float(result_data.get('points', 0))
                     existing_result.laps_completed = int(result_data.get('laps', 0))
                     existing_result.status = status
                     existing_result.time = result_data.get('Time', {}).get('time')
@@ -293,7 +293,7 @@ def seed_race_results_for_seasons(session, client, seasons):
                         grid_position=int(result_data.get('grid', 0)),
                         finish_position=int(position) if position else None,
                         position_text=result_data.get('positionText', ''),
-                        points=float(result_data.get('points', 0)),
+                        points_scored=float(result_data.get('points', 0)),
                         laps_completed=int(result_data.get('laps', 0)),
                         status=status,
                         time=result_data.get('Time', {}).get('time'),

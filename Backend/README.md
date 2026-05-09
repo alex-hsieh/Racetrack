@@ -12,6 +12,32 @@ Backend system for the F1 Race Predictor application, including database managem
 
 ---
 
+## Production Deployment
+
+**Live API:** https://racetrack-backend-2ak8.onrender.com
+
+### Quick Links
+
+- **API Documentation:** https://racetrack-backend-2ak8.onrender.com/docs
+- **Health Check:** https://racetrack-backend-2ak8.onrender.com/health
+- **Driver Standings:** https://racetrack-backend-2ak8.onrender.com/api/standings/drivers/current
+
+### Deployment Info
+
+- **Platform:** Render (Free Tier)
+- **Database:** PostgreSQL (Render Managed)
+- **Auto-Deploy:** Enabled from `increment-3` branch
+
+### Environment Variables
+
+Set in Render dashboard:
+
+- `DATABASE_URL` — PostgreSQL connection string (DONE)
+- `VISUALCROSSING_API_KEY` — Weather API key (DONE)
+- `ALLOWED_ORIGINS` — CORS origins (update with URL when frontend deploys)
+
+---
+
 ## Database Setup
 
 ### Prerequisites
@@ -23,17 +49,20 @@ Backend system for the F1 Race Predictor application, including database managem
 ### Installation Steps
 
 1. **Install Dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 2. **Configure Environment Variables**
+
 ```bash
 cp .env.example .env
 # Edit .env with your database credentials
 ```
 
 3. **Run Migrations**
+
 ```bash
 cd Backend
 alembic upgrade head
@@ -42,6 +71,7 @@ alembic upgrade head
 This creates all tables in the correct order with proper foreign key constraints.
 
 ### Database Connection
+
 ```
 Database: f1_predictor
 User: your_username
@@ -99,6 +129,7 @@ SELECT 'race_results', COUNT(*) FROM race_results;
 ```
 
 Expected output:
+
 ```
  table_name   | rows
 --------------+------
@@ -139,6 +170,25 @@ Expected output:
 
 ---
 
+## DATA CONTRACT
+
+Schema for the `race_results` table. The auto-updater must write rows in this
+exact format. Do not merge the auto-updater PR without sign-off from both
+Julissa and Alex.
+
+| Column            | dtype   | Source                                |
+| ----------------- | ------- | ------------------------------------- |
+| race_id           | INTEGER | Jolpica                               |
+| circuit_id        | VARCHAR | Jolpica                               |
+| driver_id         | VARCHAR | Jolpica                               |
+| team_id           | VARCHAR | Jolpica                               |
+| grid_position     | FLOAT   | Jolpica — GridPosition                |
+| finish_position   | FLOAT   | Jolpica — Position (penalty-adjusted) |
+| points_scored     | FLOAT   | Jolpica                               |
+| race_date         | DATE    | Jolpica                               |
+| weather_condition | VARCHAR | OpenWeather API ("dry","wet","mixed") |
+
+---
 
 ## File Structure
 
@@ -168,6 +218,7 @@ Backend/
 ## Troubleshooting
 
 ### Database Connection Issues
+
 ```bash
 # Check if PostgreSQL is running
 brew services list | grep postgres
@@ -180,6 +231,7 @@ psql -d f1_predictor
 ```
 
 ### Migration Issues
+
 ```bash
 # Check current migration state
 alembic current
@@ -192,6 +244,7 @@ alembic downgrade -1
 ```
 
 ### Reset Database (WARNING: deletes all data)
+
 ```bash
 psql postgres -c "DROP DATABASE f1_predictor;"
 psql postgres -c "CREATE DATABASE f1_predictor;"
@@ -207,8 +260,6 @@ DATABASE_URL=postgresql://your_user:@localhost:5432/f1_predictor python -m datab
 ```
 
 ---
-
-
 
 ## Notes
 

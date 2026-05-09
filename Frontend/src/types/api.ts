@@ -19,6 +19,7 @@ export interface RaceData {
   country: string;
   location: string;
   date: string;
+  timezone?: string;
 }
 
 export interface UpcomingRace {
@@ -102,8 +103,8 @@ export interface PredictionResponse {
 export interface SimulatorRequest {
   race_id: number;
   weather: string;
-  tire_strategy: string;
-  pit_stops: number;
+  grid_order?: string[];
+  excluded_drivers?: string[];
 }
 
 // ── News ─────────────────────────────────────────────────────────────────────
@@ -146,4 +147,24 @@ export interface RaceSummary {
   circuit_name: string | null;
   country: string | null;
   date: string | null;
+}
+
+// ── Weather ──────────────────────────────────────────────────────────────────
+
+export interface WeatherResponse {
+  temperature: number;
+  humidity: number;
+  conditions: string;
+  wind_speed: number;
+  rainfall: number;
+  forecast_time: string;
+}
+
+export interface CircuitWeatherResponse {
+  circuit_id: string;
+  circuit_name: string;
+  location: string | null;
+  country: string | null;
+  weather: WeatherResponse;
+  summary: string;
 }

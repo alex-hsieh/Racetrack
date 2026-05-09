@@ -6,10 +6,9 @@ import time
 from app.schemas.races import NextRaceResponse, CircuitInfo
 from pydantic import BaseModel
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
-from api_clients.jolpica_f1_client import JolpicaF1Client
+from app.external.jolpica import JolpicaF1Client
+from database.database import SessionLocal
+from app.models.models import Circuit as CircuitModel
 
 router = APIRouter()
 
@@ -51,9 +50,47 @@ def get_next_race():
     if not race:
         raise HTTPException(status_code=404, detail="No upcoming race found")
 
+    _COUNTRY_TZ = {
+        "Australia": "Australia/Melbourne",
+        "China": "Asia/Shanghai",
+        "Japan": "Asia/Tokyo",
+        "USA": "America/New_York",
+        "Canada": "America/Toronto",
+        "Monaco": "Europe/Monaco",
+        "Spain": "Europe/Madrid",
+        "Austria": "Europe/Vienna",
+        "UK": "Europe/London",
+        "Belgium": "Europe/Brussels",
+        "Hungary": "Europe/Budapest",
+        "Netherlands": "Europe/Amsterdam",
+        "Italy": "Europe/Rome",
+        "Azerbaijan": "Asia/Baku",
+        "Singapore": "Asia/Singapore",
+        "Mexico": "America/Mexico_City",
+        "Brazil": "America/Sao_Paulo",
+        "Qatar": "Asia/Qatar",
+        "UAE": "Asia/Dubai",
+    }
+
     try:
         circuit = race.get("Circuit", {})
         location = circuit.get("Location", {})
+        circuit_id = circuit.get("circuitId", "")
+        country = location.get("country", "")
+
+        # Query database for timezone, fallback to country map
+        timezone = None
+        if circuit_id:
+            db = SessionLocal()
+            try:
+                circuit_db = db.query(CircuitModel).filter(CircuitModel.circuit_id == circuit_id).first()
+                if circuit_db:
+                    timezone = circuit_db.timezone
+            finally:
+                db.close()
+
+        if not timezone:
+            timezone = _COUNTRY_TZ.get(country)
 
         result = NextRaceResponse(
             race_name=race["raceName"],
@@ -63,7 +100,8 @@ def get_next_race():
             circuit=CircuitInfo(
                 name=circuit.get("circuitName", ""),
                 location=location.get("locality", ""),
-                country=location.get("country", ""),
+                country=country,
+                timezone=timezone,
             ),
             season=int(race["season"]),
         )

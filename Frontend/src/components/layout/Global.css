@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Chakra+Petch:wght@700&display=swap');
+
+/* ─── Reset ─────────────────────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0C0C12;
+  color: #F5F1E8;
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* ─── Paper Texture Overlay ──────────────────────────────────────────────────── */
+
+#root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.6;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #E8E2D4; }
+::-webkit-scrollbar-thumb { background: #E8002D; border-radius: 0; }
+
+/* ─── Shared Card ────────────────────────────────────────────────────────────── */
+
+.card {
+  background: #FFFFFF;
+  border: 3px solid #000000;
+  border-radius: 0;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    #E8002D 0px, #E8002D 20px,
+    #ffffff 20px, #ffffff 40px
+  );
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0 0.75rem;
+  border-bottom: 2px solid #000000;
+}
+
+.card-label {
+  font-family: "Barlow Condensed", "Impact", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #E8002D;
+}
+
+.card-badge {
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  color: #F5F1E8;
+  background: #1E1E1E;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+/* ─── Shared Tag & Source ────────────────────────────────────────────────────── */
+
+.news-tag {
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  background: #E8002D;
+  color: #F5F1E8;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+.news-source {
+  font-size: 0.55rem;
+  color: #6B5B3E;
+  letter-spacing: 0.1em;
+  font-style: italic;
+}
+
+/* ─── Shared Select ──────────────────────────────────────────────────────────── */
+
+.f1-select {
+  background: #FFFFFF;
+  border: 3px solid #000000;
+  border-radius: 0;
+  color: #1E1E1E;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.7rem;
+  font-family: "Courier New", monospace;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border-color 0.15s;
+}
+
+.f1-select:focus {
+  border-color: #E8002D;
+  box-shadow: 2px 2px 0 #E8002D;
+}
+
+/* ─── Shared Confidence Bar ──────────────────────────────────────────────────── */
+
+.conf-bar {
+  height: 10px;
+  background: #000000;
+  border: 2px solid #000000;
+  border-radius: 0;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.conf-fill {
+  height: 100%;
+  background: #E8002D;
+  border-radius: 0;
+  animation: fillBar 1.2s ease forwards;
+}
+
+/* ─── Shared Animations ──────────────────────────────────────────────────────── */
+
+@keyframes fillBar {
+  from { width: 0 !important; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+html {
+  background: #0C0C12;
+}
+
+body {
+  background: #0C0C12;
+}
