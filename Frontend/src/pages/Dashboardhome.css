@@ -15,10 +15,13 @@
   min-height: 100vh;
   align-items: start;
 
-  /* Bleed to full width — same negative margins as the hero above */
-  margin-left:  -3rem;
-  margin-right: -2.5rem;
-  width: calc(100% + 3rem + 2.5rem);
+  /* Bleed to full viewport width regardless of .main's padding at any
+     breakpoint — avoids the margin/width getting out of sync with .main
+     (which happened here: this used to hardcode the desktop -3rem/-2.5rem
+     bleed, which clipped section titles on mobile once .main's padding
+     shrank in its own media query but this rule didn't follow). */
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -113,6 +116,11 @@
 .db-right-col {
   padding: 32px 40px 48px;
   border-left: 3px solid #000000;
+  /* Grid items default to min-width: auto, so a nowrap table inside can
+     force this column (and the whole grid) wider than the viewport instead
+     of respecting its track size — this lets .db-table-wrap's own
+     overflow-x: auto handle long rows instead of blowing out the page. */
+  min-width: 0;
 }
 
 /* Inner checkered divider between driver/team sections */

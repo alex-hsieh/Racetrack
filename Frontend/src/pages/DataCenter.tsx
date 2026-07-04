@@ -369,9 +369,10 @@ export default function DataCenter() {
           <button
             className="dc-mobile-menu-btn"
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open Menu"
+            aria-label="Open race selection menu"
           >
-            <Menu size={24} />
+            <Menu size={20} />
+            <span>RACES</span>
           </button>
           <div>
             <h1 className="dc-header-title">DATA CENTER</h1>
@@ -716,7 +717,13 @@ export default function DataCenter() {
             </>
           ) : (
             <div className="dc-empty-wrapper">
-              <EmptyState title='No Race Selected' message='Select a race from the sidebar to view data' icon="🏁" />
+              <EmptyState
+                title='No Race Selected'
+                message='Choose a race to view detailed circuit and results data'
+                icon="🏁"
+                actionLabel="SELECT RACE"
+                onAction={() => setIsSidebarOpen(true)}
+              />
             </div>
           )}
         </main>
