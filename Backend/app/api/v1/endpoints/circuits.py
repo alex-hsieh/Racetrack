@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas.data_center import CircuitSummary, CircuitDetail, LapRecord, CircuitDNA, RecentRaceResult
-from database.crud import get_db_connection
+from database.crud import get_db_connection, return_connection
 from typing import List
-from database.connection_pool import return_connection
 
 router = APIRouter()
 

@@ -1,14 +1,14 @@
-import os
 import logging
-import psycopg2
 import psycopg2.extras
 from typing import Any
+
+from database.database import engine
 
 logger = logging.getLogger(__name__)
 
 
 def _get_db():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    return engine.raw_connection()
 
 
 def _invalidate_caches():

@@ -5,8 +5,7 @@ from datetime import datetime
 import time
 
 from app.core.config import settings
-from database.crud import get_db_connection
-from database.connection_pool import return_connection
+from database.crud import get_db_connection, return_connection
 from api_clients.openweather_client import OpenWeatherClient
 
 router = APIRouter()

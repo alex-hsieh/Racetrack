@@ -5,8 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.external.jolpica import JolpicaF1Client
 from app.external.transformers import transform_result
-from database.crud import get_db_connection
-from database.connection_pool import return_connection
+from database.crud import get_db_connection, return_connection
 
 YEARS = range(2010, 2027)  # 2010–2026 inclusive (skips gracefully if season not available)
 

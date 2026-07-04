@@ -1,40 +1,29 @@
-import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 from dotenv import load_dotenv
-#from Backend.database.connection_pool import get_connection, return_connection
-#from database.connection_pool import get_connection, return_connection
-from database.connection_pool import get_connection, return_connection
+from database.database import engine
 
 load_dotenv()
-try:
-    #from Backend.database.connection_pool import get_connection, return_connection
-    from database.connection_pool import get_connection, return_connection
-    USE_POOL = True
-except ImportError:
-    USE_POOL = False
 
 def get_db_connection():
-    """Create database connection using environment variables and connection pool"""
-    if USE_POOL:
-        conn = get_connection()
-        conn.cursor_factory = RealDictCursor
-        return conn
-    else:
-        # Fallback to direct connection
-        database_url = os.getenv('DATABASE_URL')
-        return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-    
+    """Get a raw DBAPI connection from the app's single SQLAlchemy engine pool."""
+    conn = engine.raw_connection()
+    # conn is a pool proxy (_ConnectionFairy); cursor_factory has to be set on
+    # the real psycopg2 connection it wraps, not the proxy, or plain conn.cursor()
+    # calls below silently ignore it and return tuples instead of dict rows.
+    conn.dbapi_connection.cursor_factory = RealDictCursor
+    return conn
+
+def return_connection(conn):
+    """Return a connection to the pool (alias kept for call-site clarity)."""
+    conn.close()
+
 def db_connection():
     """Context manager for database connections"""
     conn = get_db_connection()
     try:
         yield conn
     finally:
-        if USE_POOL:
-            return_connection(conn)
-        else:
-            return_connection(conn)
+        return_connection(conn)
 
 def execute_query(query, params=None, fetchone=False, fetchall=True):
     """Helper function to execute queries using connection pool"""

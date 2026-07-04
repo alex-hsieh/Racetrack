@@ -5,11 +5,10 @@ from app.schemas.standings import (
 )
 from app.core.config import settings
 import time
-import os
-import psycopg2
 import psycopg2.extras
 
 from app.external.jolpica import JolpicaF1Client
+from database.database import engine
 #import fastf1.plotting
 
 TEAM_COLORS = {
@@ -50,7 +49,7 @@ def _set_cache(key: str, data):
 
 
 def _get_db():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    return engine.raw_connection()
 
 
 @router.get("/drivers/current", response_model=DriverStandingsResponse)

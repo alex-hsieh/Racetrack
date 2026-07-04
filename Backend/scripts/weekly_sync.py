@@ -38,9 +38,19 @@ def main():
         return
 
     updater = F1AutoUpdater()
+    failed = []
     for race in races:
         print(f"Syncing round {race.round} ({race.race_name})...")
-        updater.run_post_race_update(YEAR, race.round)
+        try:
+            updater.run_post_race_update(YEAR, race.round)
+        except Exception as e:
+            print(f"  FAILED to sync round {race.round} ({race.race_name}): {e}")
+            failed.append(race.round)
+
+    if failed:
+        print(f"Weekly sync finished with {len(failed)} failure(s): rounds {failed}")
+        sys.exit(1)
+
     print("Weekly sync complete.")
 
 
