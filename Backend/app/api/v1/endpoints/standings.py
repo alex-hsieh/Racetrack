@@ -98,7 +98,7 @@ def get_driver_standings():
                 driver_name=row["driver_name"],
                 team=row["team"],
                 points=float(row["points"]),
-                #wins=row["wins"],
+                wins=row["wins"],
                 win_chance=0.0,
             )
             for row in rows
@@ -128,7 +128,7 @@ def get_driver_standings():
             driver_name=f"{given} {family}".strip(),
             team=team_name,
             points=float(entry.get("points", 0)),
-            #wins=int(entry.get("wins", 0)),
+            wins=int(entry.get("wins", 0)),
             win_chance=0.0,
         ))
 
@@ -149,7 +149,8 @@ def get_team_standings():
             SELECT
                 ts.position,
                 t.team_name,
-                ts.points
+                ts.points,
+                ts.wins
             FROM team_standings ts
             JOIN teams t ON ts.team_id = t.team_id
             WHERE ts.year = %s
@@ -167,6 +168,7 @@ def get_team_standings():
                 position=row["position"],
                 team_name=row["team_name"],
                 points=float(row["points"]),
+                wins=row["wins"],
                 color=_get_team_color(row["team_name"]),  # ← FastF1 color
                 win_chance=0.0,
             )
@@ -190,6 +192,7 @@ def get_team_standings():
             position=int(entry.get("position", 0)),
             team_name=constructor.get("name", ""),
             points=float(entry.get("points", 0)),
+            wins=int(entry.get("wins", 0)),
             color=_get_team_color(constructor.get("name", "")),  # team color
             win_chance=0.0,
         ))

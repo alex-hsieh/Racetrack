@@ -8,13 +8,14 @@ class DriverStanding(BaseModel):
     driver_name: str
     team: str
     points: float
-    #wins: int
-    win_chance: float = 0.0  
+    wins: int = 0
+    win_chance: float = 0.0
 
 class TeamStanding(BaseModel):
     position: int
     team_name: str
     points: float
+    wins: int = 0
     color: str = "#000000"
     win_chance: float = 0.0
 
