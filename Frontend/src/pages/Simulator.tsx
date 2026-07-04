@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Circuit, Driver, UpcomingRace } from '../types/api';
-import { fetchAll2026Races, submitSimulation } from '../services/api';
+import { fetchAll2026Races, submitSimulation, getDrivers } from '../services/api';
 import './Simulator.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -286,7 +286,7 @@ function CircuitCard({ circuit, selected, onSelect }: {
 // ─────────────────────────────────────────────────────────────────────────────
 function Step2Panel({
   weather, onWeatherChange,
-  drivers,
+  drivers, driversError,
   grid, onGridChange,
   onBack, onPredict,
   predictLoading, predictError,
@@ -294,6 +294,7 @@ function Step2Panel({
   weather: WeatherCondition | null;
   onWeatherChange: (w: WeatherCondition) => void;
   drivers: Driver[];
+  driversError: string | null;
   grid: string[];
   onGridChange: (posIndex: number, driverId: string) => void;
   onBack: () => void;
@@ -369,6 +370,8 @@ function Step2Panel({
       <h3 className="sim-subsection-title">SELECT STARTING GRID</h3>
       <p className="sim-grid-hint">P1 is required · selecting a driver removes them from other slots</p>
 
+      {driversError && <p className="sim-notice" role="alert">{driversError}</p>}
+
       {predictError && (
         <div className="sim-error" role="alert">
           <strong>Error:</strong> {predictError}
@@ -413,6 +416,7 @@ export default function Simulator() {
 
   // Step 2 state
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driversError, setDriversError] = useState<string | null>(null);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);
   const [grid, setGrid] = useState<string[]>(Array(GRID_SIZE).fill(''));
 
@@ -588,10 +592,28 @@ export default function Simulator() {
     return () => ctrl.abort();
   }, []);
 
-  // Use FALLBACK_DRIVERS directly
   useEffect(() => {
     if (step !== 2) return;
-    setDrivers(FALLBACK_DRIVERS);
+    let cancelled = false;
+    (async () => {
+      try {
+        const live = await getDrivers();
+        if (cancelled) return;
+        if (Array.isArray(live) && live.length > 0) {
+          setDrivers(live);
+          setDriversError(null);
+        } else {
+          setDrivers(FALLBACK_DRIVERS);
+          setDriversError('Could not reach server — showing default driver grid.');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.warn('[Simulator] Failed to load drivers:', e);
+        setDrivers(FALLBACK_DRIVERS);
+        setDriversError('Could not reach server — showing default driver grid.');
+      }
+    })();
+    return () => { cancelled = true; };
   }, [step]);
 
   const handleCircuitSelect = (c: Circuit) =>
@@ -714,6 +736,7 @@ export default function Simulator() {
             weather={weather}
             onWeatherChange={setWeather}
             drivers={drivers}
+            driversError={driversError}
             grid={grid}
             onGridChange={handleGridChange}
             onBack={() => setStep(1)}

@@ -170,8 +170,8 @@ export const fetchAll2026Races = async (): Promise<LocalUpcomingRace[]> => {
 
 // Drivers
 export const getDrivers = async (): Promise<LocalDriver[]> => {
-  const response = await apiClient.get<LocalDriver[]>("/api/drivers");
-  return response.data;
+  const response = await apiClient.get<{ drivers: LocalDriver[]; count: number }>("/api/drivers/");
+  return response.data?.drivers ?? [];
 };
 
 // Circuits

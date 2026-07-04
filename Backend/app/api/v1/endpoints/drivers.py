@@ -10,66 +10,30 @@ from app.core.config import settings
 
 router = APIRouter()
 
-# 2026 F1 Driver Grid - Hardcoded fallback
+# 2026 F1 Driver Grid - Hardcoded fallback (used only if the DB has no
+# race_results yet for the current season)
 DRIVERS_2026 = [
-    {"driver_id": "hamilton", "name": "Lewis Hamilton", "team": "Mercedes", "team_color": "#27F4D2", "country_flag": "🇬🇧", "number": 44},
-    {"driver_id": "russell", "name": "George Russell", "team": "Mercedes", "team_color": "#27F4D2", "country_flag": "🇬🇧", "number": 63},
-    {"driver_id": "leclerc", "name": "Charles Leclerc", "team": "Ferrari", "team_color": "#E8002D", "country_flag": "🇲🇨", "number": 16},
-    {"driver_id": "sainz", "name": "Carlos Sainz", "team": "Ferrari", "team_color": "#E8002D", "country_flag": "🇪🇸", "number": 55},
-    {"driver_id": "norris", "name": "Lando Norris", "team": "McLaren", "team_color": "#FF8000", "country_flag": "🇬🇧", "number": 4},
-    {"driver_id": "piastri", "name": "Oscar Piastri", "team": "McLaren", "team_color": "#FF8000", "country_flag": "🇦🇺", "number": 81},
-    {"driver_id": "verstappen", "name": "Max Verstappen", "team": "Red Bull Racing", "team_color": "#3671C6", "country_flag": "🇳🇱", "number": 1},
-    {"driver_id": "perez", "name": "Sergio Pérez", "team": "Red Bull Racing", "team_color": "#3671C6", "country_flag": "🇲🇽", "number": 11},
-    {"driver_id": "alonso", "name": "Fernando Alonso", "team": "Aston Martin", "team_color": "#229971", "country_flag": "🇪🇸", "number": 14},
-    {"driver_id": "stroll", "name": "Lance Stroll", "team": "Aston Martin", "team_color": "#229971", "country_flag": "🇨🇦", "number": 18},
-    {"driver_id": "gasly", "name": "Pierre Gasly", "team": "Alpine", "team_color": "#FF87BC", "country_flag": "🇫🇷", "number": 10},
-    {"driver_id": "doohan", "name": "Jack Doohan", "team": "Alpine", "team_color": "#FF87BC", "country_flag": "🇦🇺", "number": 7},
-    {"driver_id": "albon", "name": "Alex Albon", "team": "Williams", "team_color": "#64C4FF", "country_flag": "🇹🇭", "number": 23},
-    {"driver_id": "colapinto", "name": "Franco Colapinto", "team": "Williams", "team_color": "#64C4FF", "country_flag": "🇦🇷", "number": 43},
-    {"driver_id": "tsunoda", "name": "Yuki Tsunoda", "team": "Racing Bulls", "team_color": "#6692FF", "country_flag": "🇯🇵", "number": 22},
-    {"driver_id": "hadjar", "name": "Isack Hadjar", "team": "Racing Bulls", "team_color": "#6692FF", "country_flag": "🇫🇷", "number": 21},
-    {"driver_id": "bearman", "name": "Oliver Bearman", "team": "Haas", "team_color": "#B6BABD", "country_flag": "🇬🇧", "number": 87},
-    {"driver_id": "ocon", "name": "Esteban Ocon", "team": "Haas", "team_color": "#B6BABD", "country_flag": "🇫🇷", "number": 31},
-    {"driver_id": "hulkenberg", "name": "Nico Hülkenberg", "team": "Audi", "team_color": "#FF1E00", "country_flag": "🇩🇪", "number": 27},
-    {"driver_id": "bortoleto", "name": "Gabriel Bortoleto", "team": "Audi", "team_color": "#FF1E00", "country_flag": "🇧🇷", "number": 5},
-    {"driver_id": "drugovich", "name": "Felipe Drugovich", "team": "Cadillac", "team_color": "#1E3A8A", "country_flag": "🇧🇷", "number": 50},
-    {"driver_id": "maini", "name": "Kush Maini", "team": "Cadillac", "team_color": "#1E3A8A", "country_flag": "🇮🇳", "number": 51},
+    {"driver_id": "max_verstappen", "driver_number": 1, "driver_code": "VER", "driver_forename": "Max", "driver_surname": "Verstappen", "driver_full_name": "Max Verstappen", "nationality": "Dutch", "team_id": "red_bull"},
+    {"driver_id": "liam_lawson", "driver_number": 11, "driver_code": "LAW", "driver_forename": "Liam", "driver_surname": "Lawson", "driver_full_name": "Liam Lawson", "nationality": "New Zealand", "team_id": "red_bull"},
+    {"driver_id": "lando_norris", "driver_number": 4, "driver_code": "NOR", "driver_forename": "Lando", "driver_surname": "Norris", "driver_full_name": "Lando Norris", "nationality": "British", "team_id": "mclaren"},
+    {"driver_id": "oscar_piastri", "driver_number": 81, "driver_code": "PIA", "driver_forename": "Oscar", "driver_surname": "Piastri", "driver_full_name": "Oscar Piastri", "nationality": "Australian", "team_id": "mclaren"},
+    {"driver_id": "charles_leclerc", "driver_number": 16, "driver_code": "LEC", "driver_forename": "Charles", "driver_surname": "Leclerc", "driver_full_name": "Charles Leclerc", "nationality": "Monegasque", "team_id": "ferrari"},
+    {"driver_id": "lewis_hamilton", "driver_number": 44, "driver_code": "HAM", "driver_forename": "Lewis", "driver_surname": "Hamilton", "driver_full_name": "Lewis Hamilton", "nationality": "British", "team_id": "ferrari"},
+    {"driver_id": "george_russell", "driver_number": 63, "driver_code": "RUS", "driver_forename": "George", "driver_surname": "Russell", "driver_full_name": "George Russell", "nationality": "British", "team_id": "mercedes"},
+    {"driver_id": "andrea_antonelli", "driver_number": 12, "driver_code": "ANT", "driver_forename": "Andrea", "driver_surname": "Antonelli", "driver_full_name": "Andrea Kimi Antonelli", "nationality": "Italian", "team_id": "mercedes"},
+    {"driver_id": "fernando_alonso", "driver_number": 14, "driver_code": "ALO", "driver_forename": "Fernando", "driver_surname": "Alonso", "driver_full_name": "Fernando Alonso", "nationality": "Spanish", "team_id": "aston_martin"},
+    {"driver_id": "lance_stroll", "driver_number": 18, "driver_code": "STR", "driver_forename": "Lance", "driver_surname": "Stroll", "driver_full_name": "Lance Stroll", "nationality": "Canadian", "team_id": "aston_martin"},
+    {"driver_id": "pierre_gasly", "driver_number": 10, "driver_code": "GAS", "driver_forename": "Pierre", "driver_surname": "Gasly", "driver_full_name": "Pierre Gasly", "nationality": "French", "team_id": "alpine"},
+    {"driver_id": "jack_doohan", "driver_number": 7, "driver_code": "DOO", "driver_forename": "Jack", "driver_surname": "Doohan", "driver_full_name": "Jack Doohan", "nationality": "Australian", "team_id": "alpine"},
+    {"driver_id": "carlos_sainz", "driver_number": 55, "driver_code": "SAI", "driver_forename": "Carlos", "driver_surname": "Sainz", "driver_full_name": "Carlos Sainz", "nationality": "Spanish", "team_id": "williams"},
+    {"driver_id": "alexander_albon", "driver_number": 23, "driver_code": "ALB", "driver_forename": "Alexander", "driver_surname": "Albon", "driver_full_name": "Alexander Albon", "nationality": "Thai", "team_id": "williams"},
+    {"driver_id": "yuki_tsunoda", "driver_number": 22, "driver_code": "TSU", "driver_forename": "Yuki", "driver_surname": "Tsunoda", "driver_full_name": "Yuki Tsunoda", "nationality": "Japanese", "team_id": "rb"},
+    {"driver_id": "isack_hadjar", "driver_number": 21, "driver_code": "HAD", "driver_forename": "Isack", "driver_surname": "Hadjar", "driver_full_name": "Isack Hadjar", "nationality": "French", "team_id": "rb"},
+    {"driver_id": "nico_hulkenberg", "driver_number": 27, "driver_code": "HUL", "driver_forename": "Nico", "driver_surname": "Hulkenberg", "driver_full_name": "Nico Hulkenberg", "nationality": "German", "team_id": "sauber"},
+    {"driver_id": "gabriel_bortoleto", "driver_number": 5, "driver_code": "BOR", "driver_forename": "Gabriel", "driver_surname": "Bortoleto", "driver_full_name": "Gabriel Bortoleto", "nationality": "Brazilian", "team_id": "sauber"},
+    {"driver_id": "oliver_bearman", "driver_number": 87, "driver_code": "BEA", "driver_forename": "Oliver", "driver_surname": "Bearman", "driver_full_name": "Oliver Bearman", "nationality": "British", "team_id": "haas"},
+    {"driver_id": "esteban_ocon", "driver_number": 31, "driver_code": "OCO", "driver_forename": "Esteban", "driver_surname": "Ocon", "driver_full_name": "Esteban Ocon", "nationality": "French", "team_id": "haas"},
 ]
-
-# Team color mapping for DB-based queries
-TEAM_COLORS = {
-    "mercedes": "#27F4D2",
-    "ferrari": "#E8002D",
-    "mclaren": "#FF8000",
-    "red_bull": "#3671C6",
-    "aston_martin": "#229971",
-    "alpine": "#FF87BC",
-    "williams": "#64C4FF",
-    "rb": "#6692FF",  # Racing Bulls
-    "haas": "#B6BABD",
-    "sauber": "#FF1E00",  # Audi/Sauber
-    "kick_sauber": "#FF1E00",
-    "audi": "#FF1E00",
-    "cadillac": "#1E3A8A",
-}
-
-# Country flags mapping (ISO alpha-3 to emoji)
-COUNTRY_FLAGS = {
-    "British": "🇬🇧",
-    "Monegasque": "🇲🇨",
-    "Spanish": "🇪🇸",
-    "Australian": "🇦🇺",
-    "Dutch": "🇳🇱",
-    "Mexican": "🇲🇽",
-    "Canadian": "🇨🇦",
-    "French": "🇫🇷",
-    "Thai": "🇹🇭",
-    "Argentine": "🇦🇷",
-    "Japanese": "🇯🇵",
-    "German": "🇩🇪",
-    "Brazilian": "🇧🇷",
-    "Indian": "🇮🇳",
-}
 
 
 def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
@@ -111,11 +75,13 @@ def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
         drivers_list.append(
             DriverResponse(
                 driver_id=driver.driver_id,
-                name=driver.driver_full_name,
-                team=team.team_name if team else "Unknown",
-                team_color=TEAM_COLORS.get(team_id, "#888888"),
-                country_flag=COUNTRY_FLAGS.get(driver.nationality, "\U0001F3C1"),
-                number=driver.driver_number or 0,
+                driver_number=driver.driver_number,
+                driver_code=driver.driver_code,
+                driver_forename=driver.driver_forename,
+                driver_surname=driver.driver_surname,
+                driver_full_name=driver.driver_full_name,
+                nationality=driver.nationality,
+                team_id=team_id,
             )
         )
     return drivers_list

@@ -1,14 +1,16 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class DriverResponse(BaseModel):
     driver_id: str
-    name: str
-    team: str
-    team_color: str
-    country_flag: str
-    number: int
+    driver_number: Optional[int] = None
+    driver_code: Optional[str] = None
+    driver_forename: str
+    driver_surname: str
+    driver_full_name: str
+    nationality: Optional[str] = None
+    team_id: Optional[str] = None
 
     class Config:
         from_attributes = True
