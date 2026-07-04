@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -28,6 +29,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def _seed_and_schedule(updater):
+    """Runs the Jolpica-API-backed seeding off the event loop so a slow or
+    unresponsive external API can't hang app startup (and take the whole
+    deploy health check down with it, as happened in production)."""
+    try:
+        await asyncio.to_thread(updater.seed_race_calendar, 2026)
+        await asyncio.to_thread(updater.seed_drivers_and_teams, 2026)
+        await asyncio.to_thread(updater.seed_past_results, 2026)
+        scheduled = await asyncio.to_thread(updater.schedule_upcoming_races, 2026)
+        logger.info(f"Scheduled {scheduled} upcoming race updates")
+    except Exception:
+        logger.error("Background startup seeding failed", exc_info=True)
+
+
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,23 +52,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting F1 Predictor API...")
     updater = get_updater()
-
-    updater.seed_race_calendar(2026)
-    updater.seed_drivers_and_teams(2026)
-    updater.seed_past_results(2026)
-
     updater.start_scheduler()
-    updater.schedule_upcoming_races(2026)
     logger.info("Auto-updater scheduler started")
-    
-    # Schedule upcoming 2026 races
-    scheduled = updater.schedule_upcoming_races(2026)
-    logger.info(f"Scheduled {scheduled} upcoming race updates")
-    
+
+    seed_task = asyncio.create_task(_seed_and_schedule(updater))
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down F1 Predictor API...")
+    seed_task.cancel()
     updater.stop_scheduler()
     logger.info("Auto-updater scheduler stopped")
 
