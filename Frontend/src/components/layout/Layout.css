@@ -10,32 +10,10 @@
   overflow-x: clip;
 }
 
-/* ─── Racing Stripe (left edge) ──────────────────────────────────────────────── */
-
-.app-root::after {
-  content: "";
-  position: fixed;
-  top: 0; bottom: 0; left: 0;
-  width: 8px;
-  background: repeating-linear-gradient(
-    180deg,
-    #E8002D 0px,  #E8002D 20px,
-    #1E1E1E 20px, #1E1E1E 40px
-  );
-  z-index: 50;
-  pointer-events: none;
-}
-
 /* ─── Header ─────────────────────────────────────────────────────────────────── */
 
 .header {
   background: #0C0C12;
-  border-top: 8px solid;
-  border-image: repeating-linear-gradient(
-    90deg,
-    #E8002D 0px, #E8002D 20px,
-    #000000 20px, #000000 40px
-  ) 8;
   border-bottom: 3px solid #000000;
   position: sticky;
   top: 0;
@@ -235,14 +213,6 @@
   .footer { padding: 1rem 1.25rem; }
 
   .footer-inner { flex-direction: column; gap: 0.4rem; text-align: center; }
-
-  .app-root::after {
-  background: repeating-linear-gradient(
-    180deg,
-    #E8002D 0px,  #E8002D 20px,
-    #1E1E1E 20px, #1E1E1E 40px
-  );
-}
 }
 
 /* ─── Tablet (640px – 1023px) ────────────────────────────────────────────────── */

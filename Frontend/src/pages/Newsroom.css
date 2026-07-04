@@ -12,12 +12,6 @@
 
 /* Header */
 .nr-header {
-  border-top: 8px solid;
-  border-image: repeating-linear-gradient(
-    90deg,
-    #E8002D 0px, #E8002D 20px,
-    #FFFFFF 20px, #FFFFFF 40px
-  ) 8;
   background: #1E1E1E;
   padding: 20px 24px;
   margin-bottom: 24px;
@@ -516,11 +510,7 @@
 .nr-sidebar-header-accent {
   width: 32px;
   height: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    #E8002D 0px, #E8002D 8px,
-    #F5F1E8 8px, #F5F1E8 16px
-  );
+  background: #E8002D;
 }
 
 .nr-sidebar-content {

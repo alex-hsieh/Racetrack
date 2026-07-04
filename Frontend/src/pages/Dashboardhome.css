@@ -123,15 +123,10 @@
   min-width: 0;
 }
 
-/* Inner checkered divider between driver/team sections */
+/* Spacer between driver/team sections */
 .db-checkered-inner {
   height: 8px;
   margin: 40px 0;
-  background-image: repeating-linear-gradient(
-    90deg,
-    #E8002D 0px,   #E8002D 16px,
-    #000000 16px,  #000000 32px
-  );
 }
 
 /* ── Section headings ────────────────────────────────────────────────────── */
