@@ -13,7 +13,6 @@ import {
   fetchDriverStandings,
   fetchTeamStandings,
 } from "../services/api";
-import type { DriverStanding, TeamStanding } from "../types/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2026 team color tokens (from VISUAL_STYLE_GUIDE.md)
@@ -84,46 +83,9 @@ function countryFlag(country: string | null): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Fallback data — 2026 grid
+// Fallback data — used only before the next race is known, not for standings
+// (standings show a visible empty/error state instead of mock numbers)
 // ─────────────────────────────────────────────────────────────────────────────
-const FALLBACK_DRIVER_STANDINGS: DriverStanding[] = [
-  { position: 1, driver_id: "norris", driver_name: "Lando Norris", team: "McLaren", points: 142, wins: 4 },
-  { position: 2, driver_id: "piastri", driver_name: "Oscar Piastri", team: "McLaren", points: 119, wins: 2 },
-  { position: 3, driver_id: "leclerc", driver_name: "Charles Leclerc", team: "Ferrari", points: 114, wins: 3 },
-  { position: 4, driver_id: "hamilton", driver_name: "Lewis Hamilton", team: "Ferrari", points: 102, wins: 2 },
-  { position: 5, driver_id: "russell", driver_name: "George Russell", team: "Mercedes", points: 98, wins: 1 },
-  { position: 6, driver_id: "verstappen", driver_name: "Max Verstappen", team: "Red Bull Racing", points: 87, wins: 1 },
-  { position: 7, driver_id: "antonelli", driver_name: "Kimi Antonelli", team: "Mercedes", points: 62, wins: 0 },
-  { position: 8, driver_id: "lawson", driver_name: "Liam Lawson", team: "Red Bull Racing", points: 44, wins: 0 },
-  { position: 9, driver_id: "alonso", driver_name: "Fernando Alonso", team: "Aston Martin", points: 38, wins: 0 },
-  { position: 10, driver_id: "albon", driver_name: "Alexander Albon", team: "Williams", points: 31, wins: 0 },
-  { position: 11, driver_id: "sainz", driver_name: "Carlos Sainz", team: "Williams", points: 28, wins: 0 },
-  { position: 12, driver_id: "gasly", driver_name: "Pierre Gasly", team: "Alpine", points: 22, wins: 0 },
-  { position: 13, driver_id: "doohan", driver_name: "Jack Doohan", team: "Alpine", points: 18, wins: 0 },
-  { position: 14, driver_id: "tsunoda", driver_name: "Yuki Tsunoda", team: "Racing Bulls", points: 16, wins: 0 },
-  { position: 15, driver_id: "hadjar", driver_name: "Isack Hadjar", team: "Racing Bulls", points: 14, wins: 0 },
-  { position: 16, driver_id: "hulkenberg", driver_name: "Nico Hulkenberg", team: "Kick Sauber", points: 12, wins: 0 },
-  { position: 17, driver_id: "bortoleto", driver_name: "Gabriel Bortoleto", team: "Kick Sauber", points: 8, wins: 0 },
-  { position: 18, driver_id: "stroll", driver_name: "Lance Stroll", team: "Aston Martin", points: 6, wins: 0 },
-  { position: 19, driver_id: "bearman", driver_name: "Oliver Bearman", team: "Haas", points: 4, wins: 0 },
-  { position: 20, driver_id: "ocon", driver_name: "Esteban Ocon", team: "Haas", points: 2, wins: 0 },
-  { position: 21, driver_id: "colapinto", driver_name: "Franco Colapinto", team: "Alpine", points: 1, wins: 0 },
-  { position: 22, driver_id: "magnussen", driver_name: "Kevin Magnussen", team: "Haas", points: 0, wins: 0 },
-];
-
-const FALLBACK_TEAM_STANDINGS: TeamStanding[] = [
-  { position: 1, team: "McLaren", points: 261, wins: 6 },
-  { position: 2, team: "Ferrari", points: 216, wins: 5 },
-  { position: 3, team: "Mercedes", points: 160, wins: 1 },
-  { position: 4, team: "Red Bull Racing", points: 131, wins: 1 },
-  { position: 5, team: "Williams", points: 59, wins: 0 },
-  { position: 6, team: "Aston Martin", points: 44, wins: 0 },
-  { position: 7, team: "Alpine", points: 41, wins: 0 },
-  { position: 8, team: "Racing Bulls", points: 30, wins: 0 },
-  { position: 9, team: "Kick Sauber", points: 20, wins: 0 },
-  { position: 10, team: "Haas", points: 6, wins: 0 },
-];
-
 const FALLBACK_NEXT_RACE = {
   raceName: "Miami Grand Prix",
   circuitName: "Miami International Autodrome",
@@ -287,7 +249,7 @@ export default function DashboardHome() {
   });
 
   const {
-    data: drivers = FALLBACK_DRIVER_STANDINGS,
+    data: drivers = [],
     isLoading: driversLoading,
     isError: driversError,
     error: driversErr,
@@ -302,7 +264,6 @@ export default function DashboardHome() {
         extracted = data.standings;
       }
       const results = Array.isArray(extracted) ? extracted : [];
-      if (results.length === 0) return FALLBACK_DRIVER_STANDINGS;
 
       return results.map((d: any, idx: number) => ({
         ...d,
@@ -316,7 +277,7 @@ export default function DashboardHome() {
   });
 
   const {
-    data: teams = FALLBACK_TEAM_STANDINGS,
+    data: teams = [],
     isLoading: teamsLoading,
     isError: teamsError,
     error: teamsErr,
@@ -331,7 +292,6 @@ export default function DashboardHome() {
         extracted = data.standings;
       }
       const results = Array.isArray(extracted) ? extracted : [];
-      if (results.length === 0) return FALLBACK_TEAM_STANDINGS;
 
       return results.map((t: any, idx: number) => ({
         ...t,
@@ -447,6 +407,11 @@ export default function DashboardHome() {
                 actionLabel="Retry" onAction={() => refetchDrivers()}>
                 {(driversErr as Error)?.message ?? "Could not load driver standings."}
               </ErrorMessage>
+            ) : !driversLoading && drivers.length === 0 ? (
+              <ErrorMessage severity="info" title="No standings yet"
+                actionLabel="Refresh" onAction={() => refetchDrivers()}>
+                Driver standings haven't been published for this season yet.
+              </ErrorMessage>
             ) : (
               <>
                 {/* Bar chart */}
@@ -545,6 +510,11 @@ export default function DashboardHome() {
               <ErrorMessage severity="error" title="Team standings unavailable"
                 actionLabel="Retry" onAction={() => refetchTeams()}>
                 {(teamsErr as Error)?.message ?? "Could not load constructor standings."}
+              </ErrorMessage>
+            ) : !teamsLoading && teams.length === 0 ? (
+              <ErrorMessage severity="info" title="No standings yet"
+                actionLabel="Refresh" onAction={() => refetchTeams()}>
+                Constructor standings haven't been published for this season yet.
               </ErrorMessage>
             ) : (
               <>
