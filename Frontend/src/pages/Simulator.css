@@ -206,7 +206,7 @@
   gap: 6px;
 }
 
-.sim-left-panel__flag     { font-size: 36px; line-height: 1; margin-bottom: 2px; }
+.sim-left-panel__flag     { display: block; width: 48px; height: 36px; object-fit: cover; border-radius: 4px; font-size: 36px; line-height: 1; margin-bottom: 2px; }
 
 .sim-left-panel__name {
   font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
@@ -381,7 +381,7 @@
   color: #F5F1E8; line-height: 1.2;
 }
 
-.sim-circuit-card__country { font-size: 16px; line-height: 1; }
+.sim-circuit-card__country { display: block; width: 22px; height: 16px; object-fit: cover; border-radius: 2px; font-size: 16px; line-height: 1; }
 
 /* Circuit SVG — invert so dark strokes show on dark card */
 .sim-circuit-card__svg {

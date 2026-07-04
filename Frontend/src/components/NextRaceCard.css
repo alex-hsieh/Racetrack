@@ -196,8 +196,13 @@
 }
 
 .hero__flag {
-  font-size: 1.1em;
+  display: inline-block;
+  width: 24px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 2px;
   flex-shrink: 0;
+  font-size: 1.1em;
   line-height: 1;
 }
 

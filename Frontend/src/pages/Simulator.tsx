@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import type { Circuit, Driver, UpcomingRace } from '../types/api';
 import { fetchAll2026Races, submitSimulation, getDrivers } from '../services/api';
+import Flag from '../components/ui/Flag';
 import './Simulator.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -80,21 +81,6 @@ function resolveCircuitSvg(circuit: Circuit): string | null {
     if (entry.keywords.some((kw) => haystack.includes(kw))) return entry.svg;
   }
   return null;
-}
-
-const FLAG_MAP: Record<string, string> = {
-  bahrain: '🇧🇭', 'saudi arabia': '🇸🇦', australia: '🇦🇺', japan: '🇯🇵',
-  china: '🇨🇳', usa: '🇺🇸', 'united states': '🇺🇸', italy: '🇮🇹',
-  monaco: '🇲🇨', canada: '🇨🇦', 'united kingdom': '🇬🇧', uk: '🇬🇧',
-  belgium: '🇧🇪', netherlands: '🇳🇱', azerbaijan: '🇦🇿', singapore: '🇸🇬',
-  mexico: '🇲🇽', brazil: '🇧🇷', qatar: '🇶🇦', 'abu dhabi': '🇦🇪',
-  uae: '🇦🇪', spain: '🇪🇸', austria: '🇦🇹', hungary: '🇭🇺',
-  france: '🇫🇷', russia: '🇷🇺', turkey: '🇹🇷',
-};
-
-function flagFor(country: string | null): string {
-  if (!country) return '🏁';
-  return FLAG_MAP[country.toLowerCase()] ?? '🏁';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,7 +181,6 @@ function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function LeftPanel({ selected, weather }: { selected: Circuit | null; weather: WeatherCondition | null }) {
   const svg = selected ? resolveCircuitSvg(selected) : null;
-  const flag = selected ? flagFor(selected.country) : null;
 
   return (
     <aside className="sim-left-panel">
@@ -209,7 +194,7 @@ function LeftPanel({ selected, weather }: { selected: Circuit | null; weather: W
         </div>
       ) : (
         <div className="sim-left-panel__selected">
-          <div className="sim-left-panel__flag">{flag}</div>
+          <Flag name={selected.country} className="sim-left-panel__flag" />
           <h2 className="sim-left-panel__name">{selected.circuit_name.toUpperCase()}</h2>
           {selected.location && (
             <p className="sim-left-panel__location">
@@ -276,7 +261,7 @@ function CircuitCard({ circuit, selected, onSelect }: {
       <div className="sim-circuit-card__name">
         {circuit.circuit_name.replace(/ Circuit| International| Autodrome| Grand Prix/gi, '').trim().toUpperCase()}
       </div>
-      {circuit.country && <div className="sim-circuit-card__country">{flagFor(circuit.country)}</div>}
+      {circuit.country && <Flag name={circuit.country} className="sim-circuit-card__country" />}
     </button>
   );
 }

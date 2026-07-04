@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchNextRace } from "../services/api";
 import type { RaceData } from "../types/api";
+import Flag from "./ui/Flag";
 import "./NextRaceCard.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,21 +25,6 @@ const FALLBACK_NEXT: RaceData = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const COUNTRY_FLAG: Record<string, string> = {
-  Bahrain: "🇧🇭", "Saudi Arabia": "🇸🇦", Australia: "🇦🇺", Japan: "🇯🇵",
-  China: "🇨🇳", USA: "🇺🇸", "United States": "🇺🇸", Italy: "🇮🇹",
-  Monaco: "🇲🇨", Canada: "🇨🇦", "United Kingdom": "🇬🇧", UK: "🇬🇧",
-  Belgium: "🇧🇪", Netherlands: "🇳🇱", Azerbaijan: "🇦🇿", Singapore: "🇸🇬",
-  Mexico: "🇲🇽", Brazil: "🇧🇷", Qatar: "🇶🇦", "Abu Dhabi": "🇦🇪",
-  UAE: "🇦🇪", Spain: "🇪🇸", Austria: "🇦🇹", Hungary: "🇭🇺",
-  France: "🇫🇷", "Las Vegas": "🇺🇸", Miami: "🇺🇸",
-};
-
-function flagFor(country: string | null | undefined): string {
-  if (!country) return "🏁";
-  return COUNTRY_FLAG[country] ?? "🏁";
-}
-
 /** Extract short race name: "Chinese Grand Prix" → "CHINA GP" */
 function shortRaceName(full: string): string {
   return full
@@ -125,7 +111,6 @@ export default function NextRaceCard({
   }, [loadRaces]);
 
   const next = nextRace ?? FALLBACK_NEXT;
-  const nextFlag  = flagFor(next.country);
   const nextShort = shortRaceName(next.raceName);
   const nextRange = formatDateRange(next.date);
 
@@ -153,7 +138,7 @@ export default function NextRaceCard({
             {nextShort}
           </h1>
           <p className="hero__race-details">
-            <span className="hero__flag" aria-hidden="true">{nextFlag}</span>
+            <Flag name={next.country} className="hero__flag" />
             {next.circuitName.toUpperCase()} · {nextRange}
           </p>
 
@@ -166,7 +151,7 @@ export default function NextRaceCard({
                 {shortRaceName(upcomingRace.name)}
               </h2>
               <p className="hero__race-details">
-                <span className="hero__flag" aria-hidden="true">{flagFor(upcomingRace.country)}</span>
+                <Flag name={upcomingRace.country} className="hero__flag" />
                 {(upcomingRace.circuitName || "").toUpperCase()} · {formatDateRange(upcomingRace.date)}
               </p>
             </>

@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import "./Dashboardhome.css";
 import NextRaceCard from "../components/NextRaceCard";
 import { ErrorMessage } from "../components/ErrorMessage";
+import Flag from "../components/ui/Flag";
 import {
   fetchNextRace,
   fetchUpcomingRaces,
@@ -35,51 +36,6 @@ const TEAM_COLORS: Record<string, string> = {
 
 function teamColor(team: string): string {
   return TEAM_COLORS[team] ?? "#888888";
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Country → flag emoji
-// ─────────────────────────────────────────────────────────────────────────────
-const NATIONALITY_FLAG: Record<string, string> = {
-  Dutch: "🇳🇱", Netherlands: "🇳🇱",
-  British: "🇬🇧", "United Kingdom": "🇬🇧", "Great Britain": "🇬🇧",
-  Monegasque: "🇲🇨", Monaco: "🇲🇨",
-  Spanish: "🇪🇸", Spain: "🇪🇸",
-  Australian: "🇦🇺", Australia: "🇦🇺",
-  German: "🇩🇪", Germany: "🇩🇪",
-  Finnish: "🇫🇮", Finland: "🇫🇮",
-  Mexican: "🇲🇽", Mexico: "🇲🇽",
-  Canadian: "🇨🇦", Canada: "🇨🇦",
-  French: "🇫🇷", France: "🇫🇷",
-  Japanese: "🇯🇵", Japan: "🇯🇵",
-  Danish: "🇩🇰", Denmark: "🇩🇰",
-  Thai: "🇹🇭", Thailand: "🇹🇭",
-  Italian: "🇮🇹", Italy: "🇮🇹",
-  Brazilian: "🇧🇷", Brazil: "🇧🇷",
-  Argentinian: "🇦🇷", Argentina: "🇦🇷",
-  "New Zealander": "🇳🇿", "New Zealand": "🇳🇿",
-  American: "🇺🇸", USA: "🇺🇸", "United States": "🇺🇸",
-  Chinese: "🇨🇳", China: "🇨🇳",
-};
-
-const COUNTRY_FLAG: Record<string, string> = {
-  Bahrain: "🇧🇭", "Saudi Arabia": "🇸🇦", Australia: "🇦🇺", Japan: "🇯🇵",
-  China: "🇨🇳", USA: "🇺🇸", "United States": "🇺🇸", Italy: "🇮🇹",
-  Monaco: "🇲🇨", Canada: "🇨🇦", "United Kingdom": "🇬🇧", UK: "🇬🇧",
-  Belgium: "🇧🇪", Netherlands: "🇳🇱", Azerbaijan: "🇦🇿", Singapore: "🇸🇬",
-  Mexico: "🇲🇽", Brazil: "🇧🇷", Qatar: "🇶🇦", "Abu Dhabi": "🇦🇪",
-  UAE: "🇦🇪", Spain: "🇪🇸", Austria: "🇦🇹", Hungary: "🇭🇺",
-  France: "🇫🇷",
-};
-
-function driverFlag(nationality: string | null): string {
-  if (!nationality) return "🏎";
-  return NATIONALITY_FLAG[nationality] ?? "🏎";
-}
-
-function countryFlag(country: string | null): string {
-  if (!country) return "🏁";
-  return COUNTRY_FLAG[country] ?? "🏁";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,10 +113,10 @@ interface TooltipState {
 // Race info card (left panel)
 // ─────────────────────────────────────────────────────────────────────────────
 function RaceInfoCard({
-  label, flag, name, location, date,
+  label, country, name, location, date,
 }: {
   label?: string;
-  flag: string;
+  country: string | null;
   name: string;
   location: string | null;
   date: string | null;
@@ -170,7 +126,7 @@ function RaceInfoCard({
       {label && <div className="db-race-card__label">{label}</div>}
       {label && <div className="db-race-card__divider" />}
 
-      <div className="db-race-card__flag">{flag}</div>
+      <Flag name={country} className="db-race-card__flag" />
       <h3 className="db-race-card__name">{name.toUpperCase()}</h3>
       {location && <div className="db-race-card__loc">{location}</div>}
       {date && <div className="db-race-card__date">{formatDate(date)}</div>}
@@ -309,7 +265,6 @@ export default function DashboardHome() {
 
   // ── Resolved race cards ────────────────────────────────────────────────────
   const activeNextRace = nextRace?.raceName ? nextRace : FALLBACK_NEXT_RACE;
-  const nextRaceFlag = countryFlag(activeNextRace.country ?? null);
 
   let upcomingList = (upcomingRaces || [])
     .filter((r: any) => r.raceName && r.raceName !== activeNextRace.raceName)
@@ -366,7 +321,7 @@ export default function DashboardHome() {
           ) : (
             <RaceInfoCard
               label="NEXT RACE"
-              flag={nextRaceFlag}
+              country={activeNextRace.country ?? null}
               name={activeNextRace.raceName ?? "Unknown"}
               location={activeNextRace.location ?? "TBD"}
               date={activeNextRace.date ?? null}
@@ -384,7 +339,7 @@ export default function DashboardHome() {
             upcomingList.map((race: any, idx: number) => (
               <div key={race.id || idx} style={{ marginBottom: '1rem' }}>
                 <RaceInfoCard
-                  flag={countryFlag(race?.country ?? null)}
+                  country={race?.country ?? null}
                   name={race.raceName ?? "Unknown Race"}
                   location={race.location ?? "TBD"}
                   date={race.date ?? null}
@@ -460,7 +415,6 @@ export default function DashboardHome() {
                           const winPct = maxDriverPts > 0
                             ? Math.round((d.points / maxDriverPts) * 100)
                             : 0;
-                          const flag = driverFlag(null); // nationality not in DriverStanding type
                           return (
                             <tr key={d.driver_id || d.driver_name} className="db-table-row">
                               <td>
@@ -469,7 +423,7 @@ export default function DashboardHome() {
                                 </span>
                               </td>
                               <td className="db-td-driver">
-                                <span className="db-driver-flag">{flag}</span>
+                                <Flag name={null} fallback="🏎" className="db-driver-flag" />
                                 {d.driver_name.toUpperCase()}
                               </td>
                               <td>

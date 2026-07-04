@@ -67,6 +67,11 @@
 }
 
 .db-race-card__flag {
+  display: block;
+  width: 32px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 3px;
   font-size: 28px;
   line-height: 1;
   margin-bottom: 8px;
@@ -319,7 +324,15 @@
   letter-spacing: 0.03em;
 }
 
-.db-driver-flag { margin-right: 6px; }
+.db-driver-flag {
+  display: inline-block;
+  width: 18px;
+  height: 13.5px;
+  object-fit: cover;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
 
 /* Team dot */
 .db-team-dot {
