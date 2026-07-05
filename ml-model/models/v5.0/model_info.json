@@ -1,0 +1,42 @@
+{
+  "version": "5.0",
+  "model_file": "f1_winner_model_v5.pkl",
+  "features_file": "model_features.pkl",
+  "created_date": "2026-07-05 01:08:25",
+  "dataset": "Full database with weather + qualifying telemetry (2010-2026), point-in-time features",
+  "num_samples": 7087,
+  "features": [
+    "driver_win_rate",
+    "team_avg_finish",
+    "driver_recent_form",
+    "grid_position",
+    "driver_avg_finish",
+    "driver_podium_rate",
+    "circuit_driver_performance",
+    "qualifying_position_delta",
+    "temperature_normalized",
+    "humidity_normalized",
+    "wind_speed_normalized",
+    "rainfall_intensity",
+    "qualifying_pace_percentile"
+  ],
+  "accuracy": "95.42%",
+  "win_detection_rate_0.5_threshold": "12.5%",
+  "top1_per_race_accuracy": "62.5% (20/32 races)",
+  "accuracy_methodology": "Chronological holdout (train < 2025, test >= 2025) using point-in-time (expanding/shifted) features computed only from strictly earlier races.",
+  "model_type": "RandomForestClassifier",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 10,
+    "random_state": 42
+  },
+  "new_in_v5": {
+    "qualifying_pace_percentile": "Driver's best-lap rank (0.0=fastest, 1.0=slowest) in that race weekend's qualifying session, from the OpenF1 API (Backend/api_clients/openf1_client.py \u2014 the same client predictor.py calls at inference time, so training and serving compute this feature identically). Qualifying happens before the race, so this is safe to use as a predictive feature; the race's own lap times would leak the outcome. OpenF1 coverage only starts around 2023, so earlier rows use the neutral default (0.5)."
+  },
+  "weather_normalization": {
+    "temperature": "(temp - 15) / 20",
+    "humidity": "humidity / 100",
+    "wind_speed": "wind_speed / 20",
+    "rainfall": "rainfall / 10"
+  }
+}

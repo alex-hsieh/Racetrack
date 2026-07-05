@@ -16,6 +16,7 @@ from database.crud import (
     get_grid_positions_for_race
 )
 from api_clients.openweather_client import OpenWeatherClient
+from api_clients.openf1_client import OpenF1Client
 
 # Load OpenWeather API key from environment
 from app.core.config import settings
@@ -32,7 +33,35 @@ class F1Predictor:
         else:
             print("Warning: OPENWEATHER_API_KEY not set. Weather features will use defaults.")
             self.weather_client = None
-    
+
+        # OpenF1 is a public API — no key needed.
+        self.telemetry_client = OpenF1Client()
+
+    def _get_telemetry_features(self, race: Dict, driver_number_by_id: Dict[str, int]) -> Dict[str, float]:
+        """
+        driver_id -> qualifying pace percentile for this race weekend
+        (v5.0 feature). Uses qualifying, not the race itself, since
+        qualifying happens before the race and is safe to use as a
+        prediction feature — the race's own lap times would leak the
+        outcome being predicted.
+
+        Falls back to 0.5 (no signal) for any driver missing a session/lap
+        match — OpenF1 coverage only starts around 2023, and a session may
+        not have lap data available yet close to race day.
+        """
+        try:
+            pace_by_number = self.telemetry_client.get_qualifying_pace_percentiles(
+                race['year'], race['date']
+            )
+        except Exception as e:
+            print(f"Warning: Could not fetch telemetry for race {race['race_id']}: {e}")
+            pace_by_number = {}
+
+        return {
+            driver_id: pace_by_number.get(driver_number, 0.5)
+            for driver_id, driver_number in driver_number_by_id.items()
+        }
+
     def _get_weather_features(self, circuit_id: str) -> Dict:
         """
         Fetch current weather and normalize for model v3.0
@@ -151,6 +180,17 @@ class F1Predictor:
             # real grid positions from qualifying (or race-day) results, when available
             grid_positions = get_grid_positions_for_race(race_id)
 
+        # fetch this weekend's qualifying pace telemetry (v5.0 feature) —
+        # driver_number is only present when active_drivers came from the DB
+        # (d.* includes it); the caller-supplied `drivers` override has no
+        # driver_number, so those predictions fall back to the 0.5 default.
+        driver_number_by_id = {
+            driver['driver_id']: driver.get('driver_number')
+            for driver in active_drivers
+            if driver.get('driver_number') is not None
+        }
+        telemetry_features = self._get_telemetry_features(race, driver_number_by_id)
+
         # calculate features for all drivers
         drivers_data = []
         for driver in active_drivers:
@@ -165,7 +205,8 @@ class F1Predictor:
                 'driver_name': driver.get('driver_full_name', 'Unknown'),
                 'grid_position': driver.get('grid_position') or grid_positions.get(driver['driver_id']),
                 **stats,
-                **weather_features  # Add weather features (same for all drivers)
+                **weather_features,  # Add weather features (same for all drivers)
+                'qualifying_pace_percentile': telemetry_features.get(driver['driver_id'], 0.5),
             }
             drivers_data.append(driver_info)
         

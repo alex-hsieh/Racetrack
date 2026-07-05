@@ -59,7 +59,7 @@ def _validate_model_artifacts(model, model_path: Path, features: list | None):
     return info_path, info
 
 
-def load_model(model_path="app/ml/models/f1_winner_model_v3.pkl"):
+def load_model(model_path="app/ml/models/f1_winner_model_v4.pkl"):
     global _cached_model, _model_version
 
     if _cached_model is not None:
