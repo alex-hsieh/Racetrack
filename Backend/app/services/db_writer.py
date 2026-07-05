@@ -9,17 +9,16 @@ logger = logging.getLogger(__name__)
 def _execute_each(cursor, sql: str, data: list[dict[str, Any]]) -> None:
     """Execute one statement per row instead of psycopg2.extras.execute_batch.
 
+    Avoids joining multiple statements into a single `cur.execute(";".join(...))`
+    call, which execute_batch does by default — a needless risk given
     DATABASE_URL points at Supabase's connection pooler (PgBouncer, transaction
-    pooling mode), which does not reliably support execute_batch's behavior of
-    joining multiple statements into a single `cur.execute(";".join(...))` call
-    — under concurrent traffic this was observed to cross-contaminate bound
-    parameter values between statements sharing a pooled backend connection
-    (e.g. a string like "races_race_id" — a value from an unrelated query —
-    showing up as this statement's race_id parameter). Executing one
-    statement per call avoids the multi-statement protocol path entirely.
+    pooling mode), which isn't guaranteed to support multi-statement sends
+    safely. (The "races_race_id" corruption this was originally suspected of
+    causing turned out to have a different root cause — a stale/mismatched
+    SQLAlchemy ORM query result in auto_updater.py::fetch_qualifying_results —
+    but per-row execution is still the safer default here regardless.)
     """
     for row in data:
-        logger.info(f"[DEBUG] _execute_each row: {row!r}")
         cursor.execute(sql, row)
 
 

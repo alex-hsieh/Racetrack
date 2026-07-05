@@ -281,30 +281,17 @@ class F1AutoUpdater:
                 logger.warning(f"[AUTO-UPDATER] No qualifying results yet for {year} round {round_number}")
                 return []
 
-            from database.database import SessionLocal
-            from app.models.models import Race
+            from database.crud import get_race_by_year_round
 
-            session = SessionLocal()
-            race = session.query(Race).filter(
-                Race.year == year,
-                Race.round == round_number
-            ).first()
+            race = get_race_by_year_round(year, round_number)
 
             if not race:
                 logger.error(f"[AUTO-UPDATER] Race not found for {year} round {round_number}")
-                session.close()
                 return []
 
-            race_id = race.race_id
-            circuit_id = race.circuit_id
-            race_date = race.date
-            session.close()
-
-            logger.info(
-                f"[AUTO-UPDATER] DEBUG race lookup: race_id={race_id!r} ({type(race_id).__name__}) "
-                f"circuit_id={circuit_id!r} ({type(circuit_id).__name__}) "
-                f"race_date={race_date!r} ({type(race_date).__name__})"
-            )
+            race_id = race['race_id']
+            circuit_id = race['circuit_id']
+            race_date = race['date']
 
             normalized = []
             for result in quali_data:
