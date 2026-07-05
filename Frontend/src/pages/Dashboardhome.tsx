@@ -17,29 +17,7 @@ import {
   fetchAll2026Races,
   fetchStoredPrediction,
 } from "../services/api";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 2026 team color tokens (from VISUAL_STYLE_GUIDE.md)
-// ─────────────────────────────────────────────────────────────────────────────
-const TEAM_COLORS: Record<string, string> = {
-  "Red Bull Racing": "#1E41FF",
-  "McLaren": "#FF8000",
-  "Ferrari": "#E8002D",
-  "Mercedes": "#00D2BE",
-  "Aston Martin": "#006F62",
-  "Alpine": "#0093CC",
-  "Williams": "#005AFF",
-  "Racing Bulls": "#1434CB",
-  "RB": "#1434CB",
-  "Haas": "#B6BABD",
-  "Kick Sauber": "#00E701",
-  "Cadillac": "#CC0000",
-  "Audi": "#C0C0C0",
-};
-
-function teamColor(team: string): string {
-  return TEAM_COLORS[team] ?? "#888888";
-}
+import { getTeamColor as teamColor } from "../utils/teamColors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fallback data — used only before the next race is known, not for standings

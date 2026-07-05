@@ -1,4 +1,5 @@
 import './DriverCard.css';
+import { getTeamColor } from '../../utils/teamColors';
 
 export interface DriverCardProps {
   driver_id: string;
@@ -11,22 +12,7 @@ export interface DriverCardProps {
   showScanlines?: boolean;
 }
 
-export const getTeamColor = (teamName: string): string => {
-  const name = teamName.toLowerCase();
-  
-  if (name.includes('red bull')) return '#0600ef';      // Red Bull Blue
-  if (name.includes('ferrari')) return '#ef1a2d';       // Ferrari Red
-  if (name.includes('mclaren')) return '#ff8000';       // McLaren Papaya
-  if (name.includes('mercedes')) return '#00a19c';      // Mercedes Teal
-  if (name.includes('aston martin')) return '#00665e';  // Aston Green
-  if (name.includes('alpine')) return '#0090ff';        // Alpine Blue
-  if (name.includes('williams')) return '#005aff';      // Williams Blue
-  if (name.includes('sauber') || name.includes('stake')) return '#00e701'; // Kick Sauber Green
-  if (name.includes('haas')) return '#ffffff';          // Haas White
-  if (name.includes('rb') || name.includes('alphatauri')) return '#6692ff'; // VCARB Blue
-  
-  return '#C41E3A'; // Fallback color if team is not found
-};
+export { getTeamColor };
 
 export function DriverCard({
   name,

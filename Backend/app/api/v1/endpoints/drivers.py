@@ -54,7 +54,7 @@ def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
     latest_results = (
         db.query(
             RaceResult.driver_id.label("driver_id"),
-            RaceResult.team_id.label("team_id"),
+            RaceResult.team_id.label("current_team_id"),
             row_number,
         )
         .join(Race, Race.race_id == RaceResult.race_id)
@@ -63,7 +63,7 @@ def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
     )
 
     rows = (
-        db.query(Driver, latest_results.c.team_id)
+        db.query(Driver, latest_results.c.current_team_id)
         .join(latest_results, latest_results.c.driver_id == Driver.driver_id)
         .filter(latest_results.c.rn == 1)
         .all()

@@ -9,6 +9,7 @@ import {
   Cell,
 } from 'recharts';
 import './DriverStandingsChart.css';
+import { getTeamColor } from '../../utils/teamColors';
 
 export interface DriverStanding {
   position: number;
@@ -20,20 +21,6 @@ export interface DriverStanding {
 export interface DriverStandingsChartProps {
   standings: DriverStanding[];
 }
-
-// Team colors for visual clarity
-const teamColors: Record<string, string> = {
-  'Red Bull Racing': '#0600EF',
-  'Ferrari': '#DC0000',
-  'Mercedes': '#00D2BE',
-  'McLaren': '#FF8700',
-  'Aston Martin': '#006F62',
-  'Alpine': '#0090FF',
-  'Williams': '#005AFF',
-  'AlphaTauri': '#2B4562',
-  'Alfa Romeo': '#900000',
-  'Haas': '#FFFFFF',
-};
 
 export function DriverStandingsChart({ standings }: DriverStandingsChartProps) {
   // Transform data for recharts
@@ -106,7 +93,7 @@ export function DriverStandingsChart({ standings }: DriverStandingsChartProps) {
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={teamColors[entry.team] || '#C41E3A'}
+                  fill={getTeamColor(entry.team)}
                   stroke="#000"
                   strokeWidth={2}
                 />

@@ -7,6 +7,7 @@ import {
   Legend,
 } from 'recharts';
 import './TeamStandingsChart.css';
+import { getTeamColor } from '../../utils/teamColors';
 
 export interface TeamStanding {
   position: number;
@@ -21,25 +22,6 @@ export interface TeamStandingsChartProps {
   standings: TeamStanding[];
 }
 
-// Team colors for visual variety
-const teamColors: Record<string, string> = {
-  'Oracle Red Bull Racing': '#1E3A8A',
-  'Mercedes-AMG Petronas': '#00D2BE',
-  'Scuderia Ferrari': '#DC0000',
-  'McLaren F1 Team': '#FF8700',
-  'Aston Martin Aramco': '#006F62',
-  'Red Bull Racing': '#0600EF',
-  'Ferrari': '#DC0000',
-  'Mercedes': '#00D2BE',
-  'McLaren': '#FF8700',
-  'Aston Martin': '#006F62',
-  'Alpine': '#0090FF',
-  'Williams': '#005AFF',
-  'AlphaTauri': '#2B4562',
-  'Alfa Romeo': '#900000',
-  'Haas': '#FFFFFF',
-};
-
 export function TeamStandingsChart({ standings }: TeamStandingsChartProps) {
   // Transform data for pie chart
   const chartData = standings.map((team) => ({
@@ -47,7 +29,7 @@ export function TeamStandingsChart({ standings }: TeamStandingsChartProps) {
     value: team.points,
     position: team.position,
     wins: team.wins,
-    color: team.teamColor || teamColors[team.name] || '#C41E3A',
+    color: team.teamColor || getTeamColor(team.name),
   }));
 
   // Custom tooltip
