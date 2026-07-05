@@ -168,3 +168,11 @@ def sync_status():
             "status": "GET /api/admin/sync/status"
         }
     }
+
+
+@router.get("/sentry-test")
+def sentry_test():
+    """TEMPORARY - remove after confirming Sentry captures this. Deliberately
+    raises to verify the Sentry SDK is actually forwarding unhandled
+    exceptions, not just initialized without crashing at startup."""
+    raise RuntimeError("Sentry test error - safe to ignore, this endpoint is temporary")
