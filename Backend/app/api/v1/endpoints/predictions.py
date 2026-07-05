@@ -1,6 +1,12 @@
+import json
+
 from fastapi import APIRouter, HTTPException
-from app.schemas.predictions import PredictionRequest, PredictionResponse, DriverPrediction
+from app.schemas.predictions import (
+    PredictionRequest, PredictionResponse, DriverPrediction,
+    StoredPredictionResponse, StoredTop3Entry,
+)
 from app.ml.predictor import predictor
+from database.crud import get_predictions_for_race, get_driver_by_id
 
 router = APIRouter()
 
@@ -78,3 +84,37 @@ def predict_race(request: PredictionRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+
+@router.get("/{race_id}", response_model=StoredPredictionResponse)
+def get_stored_prediction(race_id: int):
+    """
+    Return the most recently auto-generated prediction for a race, as stored
+    by the post-qualifying pipeline (app/services/auto_updater.py). 404s when
+    qualifying hasn't happened yet for this race — that's an expected state,
+    not an error.
+    """
+    rows = get_predictions_for_race(race_id)
+    if not rows:
+        raise HTTPException(status_code=404, detail="No prediction available yet for this race")
+
+    latest = rows[0]
+    top_3_ids = json.loads(latest["predicted_top_3"])
+
+    entries = []
+    for position, driver_id in enumerate(top_3_ids, start=1):
+        driver = get_driver_by_id(driver_id)
+        entries.append(StoredTop3Entry(
+            position=position,
+            driver_id=driver_id,
+            driver_name=driver["driver_full_name"] if driver else driver_id,
+        ))
+
+    return StoredPredictionResponse(
+        race_id=race_id,
+        predicted_winner_id=latest["predicted_winner_id"],
+        predicted_winner_name=latest["predicted_winner_name"],
+        confidence_score=float(latest["confidence_score"]),
+        predicted_top_3=entries,
+        created_at=latest["created_at"],
+    )

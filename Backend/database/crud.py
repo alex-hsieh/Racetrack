@@ -244,6 +244,23 @@ def get_race_results(race_id):
     return_connection(conn)
     return results
 
+def get_grid_positions_for_race(race_id):
+    """Real grid positions for a race, keyed by driver_id — used by the
+    predictor to respect actual qualifying/grid data instead of guessing."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT driver_id, grid_position
+        FROM race_results
+        WHERE race_id = %s AND grid_position IS NOT NULL
+    """, (race_id,))
+
+    rows = cursor.fetchall()
+    cursor.close()
+    return_connection(conn)
+    return {row['driver_id']: row['grid_position'] for row in rows}
+
 def get_driver_results(driver_id, year=None, end_year=None):
    
     conn = get_db_connection()

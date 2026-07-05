@@ -100,6 +100,21 @@ export interface PredictionResponse {
   predictions: DriverPrediction[];
 }
 
+export interface StoredTop3Entry {
+  position: number;
+  driver_id: string;
+  driver_name: string;
+}
+
+export interface StoredPredictionResponse {
+  race_id: number;
+  predicted_winner_id: string;
+  predicted_winner_name: string;
+  confidence_score: number; // 0.0 – 1.0
+  predicted_top_3: StoredTop3Entry[];
+  created_at: string;
+}
+
 export interface SimulatorRequest {
   race_id: number;
   weather: string;

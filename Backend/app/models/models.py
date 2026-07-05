@@ -31,6 +31,7 @@ class Race(Base):
     date = Column(Date)
     start_datetime = Column(DateTime(timezone=True))
     end_datetime = Column(DateTime(timezone=True))
+    qualifying_datetime = Column(DateTime(timezone=True))
     is_sprint = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -130,8 +131,10 @@ class Prediction(Base):
     predicted_winner_id = Column(String(100), ForeignKey('drivers.driver_id'))
     confidence_score = Column(Numeric(5, 2))
     predicted_top_3 = Column(String)  # JSON string
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    # server_default (not just default=) matters here: save_prediction() in
+    # database/crud.py inserts via raw SQL, bypassing SQLAlchemy's client-side default.
+    created_at = Column(DateTime, default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), server_default=func.now())
     
     # Relationships
     race = relationship("Race")

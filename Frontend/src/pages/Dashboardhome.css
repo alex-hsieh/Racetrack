@@ -160,6 +160,15 @@
 
 .db-standings-section { }
 
+.db-prediction-note {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: #F5F1E8;
+  opacity: 0.5;
+  margin-top: 12px;
+  letter-spacing: 0.02em;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    BAR CHART
 ══════════════════════════════════════════════════════════════════════════════ */

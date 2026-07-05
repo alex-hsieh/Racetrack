@@ -14,6 +14,7 @@ export type {
   TeamStandingsResponse,
   DriverPrediction,
   PredictionResponse,
+  StoredPredictionResponse,
   SimulatorRequest,
   NewsItem,
   NewsResponse,
@@ -35,6 +36,7 @@ import type {
   DriverStandingsResponse as LocalDriverStandingsResponse,
   TeamStandingsResponse as LocalTeamStandingsResponse,
   PredictionResponse as LocalPredictionResponse,
+  StoredPredictionResponse as LocalStoredPredictionResponse,
   SimulatorRequest as LocalSimulatorRequest,
   NewsResponse as LocalNewsResponse,
   CircuitWeatherResponse as LocalCircuitWeatherResponse,
@@ -221,6 +223,20 @@ export const fetchTeamStandings = async (): Promise<LocalTeamStandingsResponse> 
 export const fetchPredictions = async (raceId: number): Promise<LocalPredictionResponse> => {
   const response = await apiClient.post<LocalPredictionResponse>("/api/predictions/", { race_id: raceId });
   return response.data;
+};
+
+// Stored prediction — auto-generated once qualifying results are in.
+// Returns null (not an error) when qualifying hasn't happened yet for this race.
+export const fetchStoredPrediction = async (raceId: number): Promise<LocalStoredPredictionResponse | null> => {
+  try {
+    const response = await apiClient.get<LocalStoredPredictionResponse>(`/api/predictions/${raceId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 // Simulator (POST with all 4 params)

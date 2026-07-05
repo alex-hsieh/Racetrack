@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 
 
 class PredictionRequest(BaseModel):
@@ -32,3 +33,18 @@ class PredictionResponse(BaseModel):
     race_id: int
     model_version: str
     predictions: List[DriverPrediction]
+
+
+class StoredTop3Entry(BaseModel):
+    position: int
+    driver_id: str
+    driver_name: str
+
+
+class StoredPredictionResponse(BaseModel):
+    race_id: int
+    predicted_winner_id: str
+    predicted_winner_name: str
+    confidence_score: float
+    predicted_top_3: List[StoredTop3Entry]
+    created_at: datetime

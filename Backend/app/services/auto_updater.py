@@ -54,6 +54,8 @@ class F1AutoUpdater:
             if race.end_datetime:
                 self.schedule_race_update(race.end_datetime, year, race.round)
                 scheduled_count += 1
+            if race.qualifying_datetime and race.qualifying_datetime > now:
+                self.schedule_qualifying_prediction(race.qualifying_datetime, year, race.round)
 
         session.close()
         logger.info(f"[AUTO-UPDATER] ✓ Scheduled {scheduled_count} upcoming races for {year}")
@@ -69,6 +71,56 @@ class F1AutoUpdater:
             replace_existing=True
         )
         logger.info(f"[AUTO-UPDATER] Scheduled update for {year} round {round_number} at {trigger_time}")
+
+    def schedule_qualifying_prediction(
+        self, quali_time: datetime, year: int, round_number: int,
+        attempt: int = 1, max_attempts: int = 6
+    ):
+        """One-shot job that runs the post-qualifying grid+prediction pipeline.
+        Self-reschedules (up to max_attempts) if qualifying results aren't
+        posted yet, rather than using a repeating trigger that would need
+        separate stop-on-success teardown logic."""
+        from datetime import timezone
+
+        if attempt == 1:
+            trigger_time = quali_time + timedelta(hours=2)
+        else:
+            trigger_time = datetime.now(timezone.utc) + timedelta(minutes=20)
+
+        self.scheduler.add_job(
+            self._run_qualifying_prediction_attempt,
+            trigger=DateTrigger(run_date=trigger_time),
+            args=[year, round_number, attempt, max_attempts],
+            id=f"quali_predict_{year}_round_{round_number}",
+            replace_existing=True
+        )
+        logger.info(
+            f"[AUTO-UPDATER] Scheduled qualifying prediction for {year} round "
+            f"{round_number} at {trigger_time} (attempt {attempt}/{max_attempts})"
+        )
+
+    def _run_qualifying_prediction_attempt(
+        self, year: int, round_number: int, attempt: int, max_attempts: int
+    ):
+        try:
+            ok = self.run_post_qualifying_update(year, round_number)
+        except Exception:
+            logger.error(
+                f"[AUTO-UPDATER] Qualifying prediction attempt {attempt} for "
+                f"{year} round {round_number} raised",
+                exc_info=True
+            )
+            ok = False
+
+        if not ok and attempt < max_attempts:
+            self.schedule_qualifying_prediction(
+                None, year, round_number, attempt=attempt + 1, max_attempts=max_attempts
+            )
+        elif not ok:
+            logger.warning(
+                f"[AUTO-UPDATER] Giving up on qualifying prediction for {year} "
+                f"round {round_number} after {max_attempts} attempts"
+            )
 
     def run_post_race_update(self, year: int, round_number: int):
         logger.info(f"[AUTO-UPDATER] ===== POST-RACE UPDATE STARTED =====")
@@ -204,6 +256,101 @@ class F1AutoUpdater:
             logger.error(f"[AUTO-UPDATER] ✗ Error fetching race results: {e}")
             raise
 
+    def fetch_qualifying_results(self, year: int, round_number: int) -> List[Dict[str, Any]]:
+        """Partial race_results rows carrying only the real grid position from
+        qualifying — finish_position/points/etc. are filled in later by the
+        normal post-race upsert, via the same (race_id, driver_id) conflict key."""
+        logger.info(f"[AUTO-UPDATER] Fetching qualifying results for {year} round {round_number}...")
+        try:
+            quali_data = self.client.get_qualifying_results(year, round_number)
+            if not quali_data:
+                logger.warning(f"[AUTO-UPDATER] No qualifying results yet for {year} round {round_number}")
+                return []
+
+            from database.database import SessionLocal
+            from app.models.models import Race
+
+            session = SessionLocal()
+            race = session.query(Race).filter(
+                Race.year == year,
+                Race.round == round_number
+            ).first()
+
+            if not race:
+                logger.error(f"[AUTO-UPDATER] Race not found for {year} round {round_number}")
+                session.close()
+                return []
+
+            race_id = race.race_id
+            circuit_id = race.circuit_id
+            race_date = race.date
+            session.close()
+
+            normalized = []
+            for result in quali_data:
+                normalized.append({
+                    'race_id': race_id,
+                    'circuit_id': circuit_id,
+                    'race_date': race_date,
+                    'driver_id': result['Driver']['driverId'],
+                    'team_id': result['Constructor']['constructorId'],
+                    'grid_position': float(result['position']),
+                    'finish_position': None,
+                    'points_scored': 0.0,
+                    'position_text': None,
+                    'laps_completed': 0,
+                    'status': None,
+                    'time': None,
+                    'dnf': False,
+                    'weather_condition': None,
+                })
+
+            logger.info(f"[AUTO-UPDATER] ✓ Fetched {len(normalized)} qualifying results")
+            return normalized
+        except Exception as e:
+            logger.error(f"[AUTO-UPDATER] ✗ Error fetching qualifying results: {e}")
+            raise
+
+    def run_post_qualifying_update(self, year: int, round_number: int) -> bool:
+        """Pull real grid positions from qualifying, then generate and store
+        a grid-aware win prediction. Returns False (not an error) when
+        qualifying results simply aren't posted yet, so the caller can retry."""
+        logger.info(f"[AUTO-UPDATER] ===== POST-QUALIFYING UPDATE STARTED =====")
+        logger.info(f"[AUTO-UPDATER] Year: {year}, Round: {round_number}")
+        try:
+            quali_rows = self.fetch_qualifying_results(year, round_number)
+            if not quali_rows:
+                logger.info(f"[AUTO-UPDATER] Qualifying not posted yet for {year} round {round_number}")
+                return False
+
+            rows_saved = upsert_race_results(quali_rows)
+            logger.info(f"[AUTO-UPDATER] ✓ Grid positions: {rows_saved} rows saved")
+
+            from database.crud import get_race_by_year_round, save_prediction
+            from app.ml.predictor import predictor
+            import json
+
+            race = get_race_by_year_round(year, round_number)
+            race_id = race['race_id']
+
+            predictions = predictor.predict_race_winner(race_id)
+            winner = next(p for p in predictions if p['predicted_position'] == 1)
+            top_3 = [p['driver_id'] for p in sorted(predictions, key=lambda p: p['predicted_position'])[:3]]
+
+            save_prediction(
+                race_id=race_id,
+                predicted_winner_id=winner['driver_id'],
+                confidence_score=winner['confidence_score'],
+                predicted_top_3=json.dumps(top_3),
+            )
+            logger.info(f"[AUTO-UPDATER] ✓ Saved prediction: {winner['driver_id']} ({winner['confidence_score']})")
+            logger.info(f"[AUTO-UPDATER] ===== POST-QUALIFYING UPDATE COMPLETE =====")
+            return True
+        except Exception as e:
+            logger.error(f"[AUTO-UPDATER] ===== POST-QUALIFYING UPDATE FAILED =====")
+            logger.error(f"[AUTO-UPDATER] Error: {e}", exc_info=True)
+            raise
+
     def seed_race_calendar(self, year: int = 2026):
         from database.database import SessionLocal
         from app.models.models import Race, Circuit
@@ -250,6 +397,11 @@ class F1AutoUpdater:
                 session_dts = [d for d in session_dts if d]
                 start_dt = min(session_dts) if session_dts else race_dt
 
+                quali_dt = (
+                    _parse_dt(r['Qualifying']['date'], r['Qualifying'].get('time', '00:00:00Z'))
+                    if 'Qualifying' in r else None
+                )
+
                 existing = session.query(Race).filter(
                     Race.year == year,
                     Race.round == int(r['round'])
@@ -266,8 +418,13 @@ class F1AutoUpdater:
                         date=datetime.strptime(r['date'], '%Y-%m-%d').date(),
                         start_datetime=start_dt,
                         end_datetime=end_dt,
+                        qualifying_datetime=quali_dt,
                     ))
                     count += 1
+                elif existing.qualifying_datetime is None and quali_dt is not None:
+                    # Backfill onto races seeded before this column existed,
+                    # without touching any other already-seeded fields.
+                    existing.qualifying_datetime = quali_dt
 
             session.commit()
             logger.info(f"[AUTO-UPDATER] ✓ Seeded {count} races for {year}")

@@ -12,7 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from database.crud import (
     get_race_by_id,
     get_active_drivers,
-    get_driver_results
+    get_driver_results,
+    get_grid_positions_for_race
 )
 from api_clients.openweather_client import OpenWeatherClient
 
@@ -130,21 +131,26 @@ class F1Predictor:
                 {
                     'driver_id': d['driver_id'],
                     'driver_full_name': d['driver_name'],
-                    'team_name': d['team']
+                    'team_name': d['team'],
+                    'grid_position': d.get('grid_position'),
                 }
                 for d in drivers
             ]
+            grid_positions = {}
         else:
             # get active drivers for the race year from database
             active_drivers = get_active_drivers(race['year'])
-            
+
             # fallback: if no drivers for upcoming race year, use previous year's roster
             if not active_drivers and race['year'] >= 2026:
                 active_drivers = get_active_drivers(race['year'] - 1)
-            
+
             if not active_drivers:
                 raise ValueError(f"No active drivers found for year {race['year']}")
-        
+
+            # real grid positions from qualifying (or race-day) results, when available
+            grid_positions = get_grid_positions_for_race(race_id)
+
         # calculate features for all drivers
         drivers_data = []
         for driver in active_drivers:
@@ -153,10 +159,11 @@ class F1Predictor:
                 race['year'],
                 race['circuit_id']
             )
-            
+
             driver_info = {
                 'driver_id': driver['driver_id'],
                 'driver_name': driver.get('driver_full_name', 'Unknown'),
+                'grid_position': driver.get('grid_position') or grid_positions.get(driver['driver_id']),
                 **stats,
                 **weather_features  # Add weather features (same for all drivers)
             }
@@ -288,11 +295,26 @@ class F1Predictor:
     def _build_feature_dataframe(self, drivers_data: List[Dict]) -> pd.DataFrame:
         """Build feature matrix in the correct order for the model."""
         df = pd.DataFrame(drivers_data)
-        
-        # sort by driver_win_rate to establish default grid positions
+
+        # Sort by win rate — this is the tiebreaker order for the synthetic
+        # fallback rank below, and a stable base ordering either way.
         df = df.sort_values('driver_win_rate', ascending=False, ignore_index=True)
-        df['grid_position'] = range(1, len(df) + 1)
-        
+        fallback_rank = range(1, len(df) + 1)
+
+        if 'grid_position' not in df.columns or df['grid_position'].isna().all():
+            # No real grid data anywhere (e.g. a far-future race with no
+            # qualifying yet) — fall back to a win-rate-based synthetic rank,
+            # same as before this fix.
+            df['grid_position'] = list(fallback_rank)
+        else:
+            # Respect real grid positions (from qualifying/race results, or
+            # an explicit override passed by the caller); only fill in the
+            # synthetic rank for any individual driver still missing one.
+            df['grid_position'] = [
+                gp if pd.notna(gp) else fb
+                for gp, fb in zip(df['grid_position'], fallback_rank)
+            ]
+
         # ensure all required features are present in correct order
         if self.features:
             # reorder columns to match model's expected feature order

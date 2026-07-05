@@ -8,11 +8,14 @@ import "./Dashboardhome.css";
 import NextRaceCard from "../components/NextRaceCard";
 import { ErrorMessage } from "../components/ErrorMessage";
 import Flag from "../components/ui/Flag";
+import { PredictionResultCard } from "../components/data";
 import {
   fetchNextRace,
   fetchUpcomingRaces,
   fetchDriverStandings,
   fetchTeamStandings,
+  fetchAll2026Races,
+  fetchStoredPrediction,
 } from "../services/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,6 +269,27 @@ export default function DashboardHome() {
   // ── Resolved race cards ────────────────────────────────────────────────────
   const activeNextRace = nextRace?.raceName ? nextRace : FALLBACK_NEXT_RACE;
 
+  // ── Race winner prediction ──────────────────────────────────────────────────
+  // fetchNextRace/fetchUpcomingRaces are live-schedule-backed and don't carry
+  // the database's real race_id — resolve it by matching round number against
+  // the DB-backed race list, then look up the auto-generated prediction.
+  const { data: dbRaces } = useQuery({
+    queryKey: ["races2026"],
+    queryFn: fetchAll2026Races,
+    staleTime: 5 * 60_000,
+  });
+
+  const nextRaceDbId = dbRaces?.find(
+    (r: any) => r.round_number === activeNextRace.roundNumber
+  )?.race_id;
+
+  const { data: prediction, isLoading: predictionLoading } = useQuery({
+    queryKey: ["prediction", nextRaceDbId],
+    queryFn: () => fetchStoredPrediction(nextRaceDbId as number),
+    enabled: !!nextRaceDbId,
+    staleTime: 60_000,
+  });
+
   let upcomingList = (upcomingRaces || [])
     .filter((r: any) => r.raceName && r.raceName !== activeNextRace.raceName)
     .sort((a: any, b: any) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime())
@@ -351,6 +375,42 @@ export default function DashboardHome() {
 
         {/* ── RIGHT 70% — Championship standings ──────────────────────────── */}
         <main className="db-right-col">
+
+          {/* ── Race winner prediction ───────────────────────────────────── */}
+          <section className="db-standings-section">
+            <h2 className="db-section-title">RACE WINNER PREDICTION</h2>
+            <div className="db-red-stripe" />
+
+            {predictionLoading && nextRaceDbId ? (
+              <div className="flex gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="db-race-card db-race-card--skeleton" style={{ flex: 1 }} />
+                ))}
+              </div>
+            ) : prediction ? (
+              <>
+                <div className="flex gap-4 flex-wrap">
+                  {prediction.predicted_top_3.map((entry) => (
+                    <PredictionResultCard
+                      key={entry.driver_id}
+                      driver={entry.driver_name}
+                      predicted_position={entry.position}
+                      // Only the winner's confidence is computed/stored today;
+                      // shown here as the model's overall win-prediction confidence.
+                      confidence_score={prediction.confidence_score * 100}
+                    />
+                  ))}
+                </div>
+                <p className="db-prediction-note">
+                  Confidence reflects the model's predicted win probability for {prediction.predicted_winner_name}.
+                </p>
+              </>
+            ) : (
+              <ErrorMessage severity="info" title="No prediction yet">
+                Prediction available after qualifying for {activeNextRace.raceName ?? "the next race"}.
+              </ErrorMessage>
+            )}
+          </section>
 
           {/* ── Driver standings ────────────────────────────────────────── */}
           <section className="db-standings-section">
