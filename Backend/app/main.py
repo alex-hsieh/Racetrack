@@ -4,8 +4,20 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+import sentry_sdk
+
 from app.core.config import settings
 from app.services.auto_updater import get_updater
+
+# Optional — only active when SENTRY_DSN is set (e.g. unset in local dev).
+# environment distinguishes prod vs staging within the same Sentry project
+# rather than needing separate projects per environment.
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        send_default_pii=False,
+    )
 
 from app.api.v1.endpoints.races import router as races_router
 from routes.health import router as health_router
