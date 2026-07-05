@@ -26,9 +26,21 @@ if config.config_file_name is not None:
 # Set target metadata for autogenerate
 target_metadata = Base.metadata
 
+# Migrations need a session-level connection (DDL, explicit transactions,
+# search_path) — DATABASE_URL points at Supabase's transaction-pooling
+# connection (PgBouncer), which doesn't reliably preserve that across pooled
+# backend connections and can fail with e.g. "no schema has been selected to
+# create in" on CREATE TABLE. MIGRATIONS_DATABASE_URL should be Supabase's
+# direct (session-mode) connection string instead. Falls back to
+# DATABASE_URL so environments that only define one (e.g. a plain local
+# Postgres with no pooler) keep working unchanged.
+def _migrations_url() -> str:
+    return os.getenv('MIGRATIONS_DATABASE_URL') or os.getenv('DATABASE_URL')
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = os.getenv('DATABASE_URL')
+    url = _migrations_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -43,8 +55,8 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Get config section and add database URL
     configuration = config.get_section(config.config_ini_section, {})
-    configuration['sqlalchemy.url'] = os.getenv('DATABASE_URL')
-    
+    configuration['sqlalchemy.url'] = _migrations_url()
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
