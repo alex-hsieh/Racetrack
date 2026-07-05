@@ -300,6 +300,12 @@ class F1AutoUpdater:
             race_date = race.date
             session.close()
 
+            logger.info(
+                f"[AUTO-UPDATER] DEBUG race lookup: race_id={race_id!r} ({type(race_id).__name__}) "
+                f"circuit_id={circuit_id!r} ({type(circuit_id).__name__}) "
+                f"race_date={race_date!r} ({type(race_date).__name__})"
+            )
+
             normalized = []
             for result in quali_data:
                 normalized.append({

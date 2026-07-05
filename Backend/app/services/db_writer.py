@@ -19,6 +19,7 @@ def _execute_each(cursor, sql: str, data: list[dict[str, Any]]) -> None:
     statement per call avoids the multi-statement protocol path entirely.
     """
     for row in data:
+        logger.info(f"[DEBUG] _execute_each row: {row!r}")
         cursor.execute(sql, row)
 
 
