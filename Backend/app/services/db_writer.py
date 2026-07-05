@@ -1,10 +1,25 @@
 import logging
-import psycopg2.extras
 from typing import Any
 
 from database.database import engine
 
 logger = logging.getLogger(__name__)
+
+
+def _execute_each(cursor, sql: str, data: list[dict[str, Any]]) -> None:
+    """Execute one statement per row instead of psycopg2.extras.execute_batch.
+
+    DATABASE_URL points at Supabase's connection pooler (PgBouncer, transaction
+    pooling mode), which does not reliably support execute_batch's behavior of
+    joining multiple statements into a single `cur.execute(";".join(...))` call
+    — under concurrent traffic this was observed to cross-contaminate bound
+    parameter values between statements sharing a pooled backend connection
+    (e.g. a string like "races_race_id" — a value from an unrelated query —
+    showing up as this statement's race_id parameter). Executing one
+    statement per call avoids the multi-statement protocol path entirely.
+    """
+    for row in data:
+        cursor.execute(sql, row)
 
 
 def _get_db():
@@ -63,7 +78,7 @@ def upsert_driver_standings(data: list[dict[str, Any]]) -> int:
     conn = _get_db()
     try:
         cursor = conn.cursor()
-        psycopg2.extras.execute_batch(cursor, sql, data)
+        _execute_each(cursor, sql, data)
         conn.commit()
         count = cursor.rowcount
         logger.info(f"upsert_driver_standings: {len(data)} rows upserted")
@@ -102,7 +117,7 @@ def upsert_constructor_standings(data: list[dict[str, Any]]) -> int:
     conn = _get_db()
     try:
         cursor = conn.cursor()
-        psycopg2.extras.execute_batch(cursor, sql, data)
+        _execute_each(cursor, sql, data)
         conn.commit()
         logger.info(f"upsert_constructor_standings: {len(data)} rows upserted")
         cursor.close()
@@ -155,7 +170,7 @@ def upsert_race_results(data: list[dict[str, Any]]) -> int:
     conn = _get_db()
     try:
         cursor = conn.cursor()
-        psycopg2.extras.execute_batch(cursor, sql, data)
+        _execute_each(cursor, sql, data)
         conn.commit()
         logger.info(f"upsert_race_results: {len(data)} rows inserted/updated")
         cursor.close()
