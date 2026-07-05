@@ -7,8 +7,7 @@ from app.schemas.races import NextRaceResponse, CircuitInfo
 from pydantic import BaseModel
 
 from app.external.jolpica import JolpicaF1Client
-from database.database import SessionLocal
-from app.models.models import Circuit as CircuitModel
+from database.crud import get_circuit_timezone
 
 router = APIRouter()
 
@@ -79,15 +78,7 @@ def get_next_race():
         country = location.get("country", "")
 
         # Query database for timezone, fallback to country map
-        timezone = None
-        if circuit_id:
-            db = SessionLocal()
-            try:
-                circuit_db = db.query(CircuitModel).filter(CircuitModel.circuit_id == circuit_id).first()
-                if circuit_db:
-                    timezone = circuit_db.timezone
-            finally:
-                db.close()
+        timezone = get_circuit_timezone(circuit_id) if circuit_id else None
 
         if not timezone:
             timezone = _COUNTRY_TZ.get(country)

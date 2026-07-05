@@ -150,6 +150,46 @@ def get_active_drivers(year):
     return drivers
 
 
+def get_current_grid(year):
+    """Current F1 grid for a season, with each driver's team derived from
+    their most recent race_result within that season (drivers.team_id is
+    never populated by the sync pipeline). Raw SQL/RealDictCursor rather
+    than the SQLAlchemy ORM — a `db.query(Driver, RaceResult.team_id...)`
+    version of this same query was observed in production to return
+    corrupted values (a SQLAlchemy auto-label string like 'races_race_id'
+    in place of the real column value), an ORM result-mapping issue never
+    seen in this raw-SQL pattern anywhere else in this codebase."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH latest_results AS (
+            SELECT
+                rr.driver_id,
+                rr.team_id AS current_team_id,
+                ROW_NUMBER() OVER (
+                    PARTITION BY rr.driver_id
+                    ORDER BY r.date DESC, rr.race_id DESC
+                ) AS rn
+            FROM race_results rr
+            JOIN races r ON r.race_id = rr.race_id
+            WHERE r.year = %s
+        )
+        SELECT
+            d.driver_id, d.driver_number, d.driver_code, d.driver_forename,
+            d.driver_surname, d.driver_full_name, d.nationality,
+            lr.current_team_id AS team_id
+        FROM drivers d
+        JOIN latest_results lr ON lr.driver_id = d.driver_id
+        WHERE lr.rn = 1
+    """, (year,))
+
+    rows = cursor.fetchall()
+    cursor.close()
+    return_connection(conn)
+    return rows
+
+
 def get_driver_data_for_race(race_id):
     """
     Get all drivers for a specific race with their grid positions.
@@ -409,6 +449,22 @@ def get_driver_stats(driver_id):
     cursor.close()
     return_connection(conn)
     return stats
+
+def get_circuit_timezone(circuit_id):
+    """IANA timezone string for a circuit, or None. Raw SQL rather than the
+    SQLAlchemy ORM — `db.query(Circuit).filter(...).first()` then
+    `.timezone` was observed in production returning the literal string
+    'circuits_timezone' (a SQLAlchemy auto-label) instead of the real value,
+    the same ORM result-mapping corruption seen elsewhere in this codebase."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT timezone FROM circuits WHERE circuit_id = %s", (circuit_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    return_connection(conn)
+    return row["timezone"] if row else None
+
 
 def get_circuit_results(circuit_id, limit=10):
    

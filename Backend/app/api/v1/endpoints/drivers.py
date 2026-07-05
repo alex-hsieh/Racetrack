@@ -1,11 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-from typing import List
+from fastapi import APIRouter
 
 from app.schemas.drivers import DriverResponse, DriversListResponse
-from database.database import get_db
-from app.models.models import Driver, Race, RaceResult
+from database.crud import get_current_grid
 from app.core.config import settings
 
 router = APIRouter()
@@ -36,58 +32,8 @@ DRIVERS_2026 = [
 ]
 
 
-def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
-    """
-    Determine the current grid from race_results: since drivers.team_id is
-    never populated by the sync pipeline, a driver's current team is derived
-    from their most recent race_result within the given season.
-    """
-    row_number = (
-        func.row_number()
-        .over(
-            partition_by=RaceResult.driver_id,
-            order_by=(Race.date.desc(), RaceResult.race_id.desc()),
-        )
-        .label("rn")
-    )
-
-    latest_results = (
-        db.query(
-            RaceResult.driver_id.label("driver_id"),
-            RaceResult.team_id.label("current_team_id"),
-            row_number,
-        )
-        .join(Race, Race.race_id == RaceResult.race_id)
-        .filter(Race.year == year)
-        .subquery()
-    )
-
-    rows = (
-        db.query(Driver, latest_results.c.current_team_id)
-        .join(latest_results, latest_results.c.driver_id == Driver.driver_id)
-        .filter(latest_results.c.rn == 1)
-        .all()
-    )
-
-    drivers_list = []
-    for driver, team_id in rows:
-        drivers_list.append(
-            DriverResponse(
-                driver_id=driver.driver_id,
-                driver_number=driver.driver_number,
-                driver_code=driver.driver_code,
-                driver_forename=driver.driver_forename,
-                driver_surname=driver.driver_surname,
-                driver_full_name=driver.driver_full_name,
-                nationality=driver.nationality,
-                team_id=team_id,
-            )
-        )
-    return drivers_list
-
-
 @router.get("/", response_model=DriversListResponse)
-async def get_drivers(db: Session = Depends(get_db)):
+async def get_drivers():
     """
     Get the current F1 grid, derived from the current season's race_results
     (each driver's most recent race in the season determines their team).
@@ -95,7 +41,8 @@ async def get_drivers(db: Session = Depends(get_db)):
     Falls back to a hardcoded grid if the season has no results yet
     (e.g. before the first race of the year has been synced).
     """
-    drivers_list = _get_current_grid(db, settings.CURRENT_SEASON)
+    rows = get_current_grid(settings.CURRENT_SEASON)
+    drivers_list = [DriverResponse(**row) for row in rows]
 
     if not drivers_list:
         drivers_list = [DriverResponse(**driver) for driver in DRIVERS_2026]
