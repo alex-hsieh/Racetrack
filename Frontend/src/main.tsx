@@ -13,6 +13,14 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'development',
   })
+
+  // TEMPORARY - remove after confirming Sentry captures this. Calls
+  // captureException directly (bypassing window.onerror entirely) so a
+  // console-eval'd throw not propagating to the global handler can't be
+  // mistaken for a broken integration. Visit ?sentry-test=1 to trigger.
+  if (new URLSearchParams(window.location.search).get('sentry-test')) {
+    Sentry.captureException(new Error('Sentry frontend test - safe to ignore, temporary'))
+  }
 }
 
 const queryClient = new QueryClient();
