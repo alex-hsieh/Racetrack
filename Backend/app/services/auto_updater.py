@@ -36,7 +36,7 @@ class F1AutoUpdater:
 
     def schedule_upcoming_races(self, year: int = 2026):
         from database.database import SessionLocal
-        from app.models.models import Race
+        from app.models.models import Race, Prediction
         from datetime import timezone
 
         logger.info(f"[AUTO-UPDATER] Scheduling upcoming races for {year}...")
@@ -54,8 +54,17 @@ class F1AutoUpdater:
             if race.end_datetime:
                 self.schedule_race_update(race.end_datetime, year, race.round)
                 scheduled_count += 1
-            if race.qualifying_datetime and race.qualifying_datetime > now:
-                self.schedule_qualifying_prediction(race.qualifying_datetime, year, race.round)
+            if race.qualifying_datetime:
+                # Covers both: qualifying still upcoming, AND qualifying
+                # already happened but this race never got a prediction (e.g.
+                # this code was deployed/restarted after qualifying already
+                # passed) — schedule_qualifying_prediction below runs
+                # near-immediately for the latter case rather than skipping it.
+                has_prediction = session.query(Prediction).filter(
+                    Prediction.race_id == race.race_id
+                ).first() is not None
+                if not has_prediction:
+                    self.schedule_qualifying_prediction(race.qualifying_datetime, year, race.round)
 
         session.close()
         logger.info(f"[AUTO-UPDATER] ✓ Scheduled {scheduled_count} upcoming races for {year}")
@@ -83,7 +92,12 @@ class F1AutoUpdater:
         from datetime import timezone
 
         if attempt == 1:
-            trigger_time = quali_time + timedelta(hours=2)
+            target = quali_time + timedelta(hours=2)
+            now = datetime.now(timezone.utc)
+            # If qualifying already happened well before this fired (e.g. a
+            # fresh deploy mid-race-weekend), don't schedule a job for a time
+            # that's already passed — run it almost immediately instead.
+            trigger_time = target if target > now else now + timedelta(seconds=10)
         else:
             trigger_time = datetime.now(timezone.utc) + timedelta(minutes=20)
 

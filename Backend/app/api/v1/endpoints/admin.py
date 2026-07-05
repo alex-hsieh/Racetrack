@@ -109,6 +109,46 @@ def manual_sync(
         )
 
 
+class QualifyingSyncResponse(BaseModel):
+    success: bool
+    message: str
+    qualifying_found: bool
+
+
+@router.post("/sync-qualifying", response_model=QualifyingSyncResponse)
+def manual_qualifying_sync(
+    year: int = Query(2026, description="Season year"),
+    round_number: int = Query(..., description="Race round number"),
+):
+    """
+    Manually run the post-qualifying pipeline for a specific race: pulls real
+    grid positions from qualifying, then generates and stores a grid-aware
+    win prediction.
+
+    Exists as a backfill tool for races whose qualifying already passed before
+    the scheduled job for it existed/fired (e.g. right after a fresh deploy
+    mid-race-weekend) — the normal path is the scheduler in auto_updater.py.
+
+    **WARNING: This endpoint has no authentication and is for testing/ops use only.**
+    """
+    logger.info(f"[ADMIN] ===== MANUAL QUALIFYING SYNC TRIGGERED =====")
+    logger.info(f"[ADMIN] Year: {year}, Round: {round_number}")
+    try:
+        updater = get_updater()
+        found = updater.run_post_qualifying_update(year, round_number)
+        logger.info(f"[ADMIN] ===== MANUAL QUALIFYING SYNC COMPLETE =====")
+        return QualifyingSyncResponse(
+            success=True,
+            message="Qualifying results processed and prediction saved" if found
+                     else "No qualifying results available yet for this round",
+            qualifying_found=found,
+        )
+    except Exception as e:
+        logger.error(f"[ADMIN] ===== MANUAL QUALIFYING SYNC FAILED =====")
+        logger.error(f"[ADMIN] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Qualifying sync failed: {str(e)}")
+
+
 @router.get("/sync/status")
 def sync_status():
     """
