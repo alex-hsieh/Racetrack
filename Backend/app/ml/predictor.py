@@ -293,33 +293,35 @@ class F1Predictor:
             }
     
     def _build_feature_dataframe(self, drivers_data: List[Dict]) -> pd.DataFrame:
-        """Build feature matrix in the correct order for the model."""
+        """Build feature matrix in the correct order for the model.
+
+        Row order here MUST stay aligned with the drivers_data list the
+        caller iterates over afterward to attach driver_id back to each
+        model output — so this never reorders rows (previously used
+        sort_values, which silently scrambled that alignment; rank()
+        computes the same win-rate-based fallback ranking in place)."""
         df = pd.DataFrame(drivers_data)
 
-        # Sort by win rate — this is the tiebreaker order for the synthetic
-        # fallback rank below, and a stable base ordering either way.
-        df = df.sort_values('driver_win_rate', ascending=False, ignore_index=True)
-        fallback_rank = range(1, len(df) + 1)
+        # Win-rate-based rank, used only as a fallback for missing grid
+        # data — a plain permutation of 1..N, same as the old sort_values
+        # approach, just without reordering rows to get it.
+        fallback_rank = df['driver_win_rate'].rank(ascending=False, method='first')
 
         if 'grid_position' not in df.columns or df['grid_position'].isna().all():
             # No real grid data anywhere (e.g. a far-future race with no
-            # qualifying yet) — fall back to a win-rate-based synthetic rank,
-            # same as before this fix.
-            df['grid_position'] = list(fallback_rank)
+            # qualifying yet) — fall back to the win-rate-based rank.
+            df['grid_position'] = fallback_rank
         else:
             # Respect real grid positions (from qualifying/race results, or
             # an explicit override passed by the caller); only fill in the
-            # synthetic rank for any individual driver still missing one.
-            df['grid_position'] = [
-                gp if pd.notna(gp) else fb
-                for gp, fb in zip(df['grid_position'], fallback_rank)
-            ]
+            # fallback rank for any individual driver still missing one.
+            df['grid_position'] = df['grid_position'].fillna(fallback_rank)
 
         # ensure all required features are present in correct order
         if self.features:
             # reorder columns to match model's expected feature order
             df = df[self.features]
-        
+
         return df
     
     def get_model_info(self) -> Dict:
