@@ -45,7 +45,7 @@ import type {
 // ─── Axios Client ─────────────────────────────────────────────────────────────
 
 const apiClient = axios.create({
-  baseURL: 'https://racetrack-backend-w1uz.onrender.com',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://racetrack-backend-w1uz.onrender.com',
   timeout: 10_000,
 });
 
