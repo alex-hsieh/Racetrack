@@ -5,7 +5,7 @@ from typing import List
 
 from app.schemas.drivers import DriverResponse, DriversListResponse
 from database.database import get_db
-from app.models.models import Driver, Team, Race, RaceResult
+from app.models.models import Driver, Race, RaceResult
 from app.core.config import settings
 
 router = APIRouter()
@@ -63,15 +63,14 @@ def _get_current_grid(db: Session, year: int) -> List[DriverResponse]:
     )
 
     rows = (
-        db.query(Driver, Team, latest_results.c.team_id)
+        db.query(Driver, latest_results.c.team_id)
         .join(latest_results, latest_results.c.driver_id == Driver.driver_id)
-        .outerjoin(Team, Team.team_id == latest_results.c.team_id)
         .filter(latest_results.c.rn == 1)
         .all()
     )
 
     drivers_list = []
-    for driver, team, team_id in rows:
+    for driver, team_id in rows:
         drivers_list.append(
             DriverResponse(
                 driver_id=driver.driver_id,
