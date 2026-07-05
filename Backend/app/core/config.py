@@ -14,5 +14,7 @@ class Settings(BaseSettings):
     CURRENT_SEASON: int = 2026
     OPENWEATHER_API_KEY: Optional[str] = None
     VISUALCROSSING_API_KEY: Optional[str] = None
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_ENVIRONMENT: str = "development"
 
 settings = Settings()
